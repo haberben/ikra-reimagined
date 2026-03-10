@@ -47,6 +47,17 @@ const App = () => {
     );
   }
 
+  if (showZikirmatik) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Sonner />
+          <ZikirmatikPage onBack={() => setShowZikirmatik(false)} />
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+  }
+
   const renderTab = () => {
     switch (activeTab) {
       case "home":
