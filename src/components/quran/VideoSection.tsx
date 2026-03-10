@@ -260,7 +260,7 @@ export default function VideoSection() {
                     )}
                   </div>
                 </button>
-              )))}
+              ))}
             </div>
           )}
         </>
