@@ -109,6 +109,45 @@ export type Database = {
           },
         ]
       }
+      video_playlists: {
+        Row: {
+          cover_image_url: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_published: boolean
+          sort_order: number
+          title: string
+          updated_at: string
+          youtube_playlist_id: string
+          youtube_playlist_url: string
+        }
+        Insert: {
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_published?: boolean
+          sort_order?: number
+          title: string
+          updated_at?: string
+          youtube_playlist_id: string
+          youtube_playlist_url: string
+        }
+        Update: {
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_published?: boolean
+          sort_order?: number
+          title?: string
+          updated_at?: string
+          youtube_playlist_id?: string
+          youtube_playlist_url?: string
+        }
+        Relationships: []
+      }
       wallpapers: {
         Row: {
           arabic_text: string
