@@ -14,7 +14,128 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      daily_content: {
+        Row: {
+          arabic_text: string
+          date: string
+          id: string
+          source: string | null
+          turkish_text: string
+          type: string
+        }
+        Insert: {
+          arabic_text: string
+          date?: string
+          id?: string
+          source?: string | null
+          turkish_text: string
+          type: string
+        }
+        Update: {
+          arabic_text?: string
+          date?: string
+          id?: string
+          source?: string | null
+          turkish_text?: string
+          type?: string
+        }
+        Relationships: []
+      }
+      hatim_groups: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          invite_code: string
+          is_public: boolean
+          name: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          invite_code: string
+          is_public?: boolean
+          name: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          invite_code?: string
+          is_public?: boolean
+          name?: string
+        }
+        Relationships: []
+      }
+      hatim_juz: {
+        Row: {
+          claimed_at: string | null
+          claimed_by: string | null
+          claimed_by_name: string | null
+          completed_at: string | null
+          group_id: string
+          id: string
+          juz_number: number
+        }
+        Insert: {
+          claimed_at?: string | null
+          claimed_by?: string | null
+          claimed_by_name?: string | null
+          completed_at?: string | null
+          group_id: string
+          id?: string
+          juz_number: number
+        }
+        Update: {
+          claimed_at?: string | null
+          claimed_by?: string | null
+          claimed_by_name?: string | null
+          completed_at?: string | null
+          group_id?: string
+          id?: string
+          juz_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hatim_juz_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "hatim_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wallpapers: {
+        Row: {
+          arabic_text: string
+          category: string
+          id: string
+          image_url: string
+          turkish_text: string
+          uploaded_at: string
+        }
+        Insert: {
+          arabic_text: string
+          category: string
+          id?: string
+          image_url: string
+          turkish_text: string
+          uploaded_at?: string
+        }
+        Update: {
+          arabic_text?: string
+          category?: string
+          id?: string
+          image_url?: string
+          turkish_text?: string
+          uploaded_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
