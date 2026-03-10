@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,6 +11,7 @@ import QuranPage from "@/pages/QuranPage";
 import GalleryPage from "@/pages/GalleryPage";
 import HatimPage from "@/pages/HatimPage";
 import NotificationsPage from "@/pages/NotificationsPage";
+import ZikirmatikPage from "@/pages/ZikirmatikPage";
 
 const queryClient = new QueryClient();
 
