@@ -7,6 +7,7 @@ interface HomePageProps {
   onNavigate: (tab: string) => void;
   onNotifications: () => void;
   onZikirmatik: () => void;
+  onMenuOpen: () => void;
 }
 
 const PRAYER_LABELS: Record<string, string> = {
@@ -21,7 +22,7 @@ const DISCOVER_ITEMS = [
   { icon: "counter_1", label: "Zikirmatik", action: "zikirmatik" },
 ];
 
-export default function HomePage({ city, onNavigate, onNotifications, onZikirmatik }: HomePageProps) {
+export default function HomePage({ city, onNavigate, onNotifications, onZikirmatik, onMenuOpen }: HomePageProps) {
   const { times, hijri, loading } = usePrayerTimes(city);
   const { current, next, remaining, progress } = useCurrentPrayer(times);
 
@@ -31,6 +32,8 @@ export default function HomePage({ city, onNavigate, onNotifications, onZikirmat
         { key: "Sunrise", time: times.Sunrise },
         { key: "Dhuhr", time: times.Dhuhr },
         { key: "Asr", time: times.Asr },
+        { key: "Maghrib", time: times.Maghrib },
+        { key: "Isha", time: times.Isha },
       ]
     : [];
 
@@ -41,6 +44,7 @@ export default function HomePage({ city, onNavigate, onNotifications, onZikirmat
         <StickyHeader
           dark
           showPattern={false}
+          onLeftClick={onMenuOpen}
           onRightClick={onNotifications}
           className="border-none bg-transparent"
         />
@@ -84,7 +88,7 @@ export default function HomePage({ city, onNavigate, onNotifications, onZikirmat
 
           {/* Mini prayer grid */}
           {miniPrayers.length > 0 && (
-            <div className="mt-4 grid grid-cols-4 gap-2">
+            <div className="mt-4 grid grid-cols-3 gap-2">
               {miniPrayers.map((p) => {
                 const isActive = PRAYER_LABELS[p.key] === current;
                 return (
