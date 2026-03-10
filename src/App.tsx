@@ -71,7 +71,7 @@ const App = () => {
       case "hatim":
         return <HatimPage />;
       default:
-        return <HomePage city={city} onNavigate={setActiveTab} onNotifications={() => setShowNotifications(true)} />;
+        return <HomePage city={city} onNavigate={setActiveTab} onNotifications={() => setShowNotifications(true)} onZikirmatik={() => setShowZikirmatik(true)} />;
     }
   };
 

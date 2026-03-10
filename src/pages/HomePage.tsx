@@ -140,7 +140,7 @@ export default function HomePage({ city, onNavigate, onNotifications, onZikirmat
           {DISCOVER_ITEMS.map((item) => (
             <button
               key={item.label}
-              onClick={() => item.tab && onNavigate(item.tab)}
+              onClick={() => item.action === "zikirmatik" ? onZikirmatik() : item.action.startsWith("tab:") && onNavigate(item.action.replace("tab:", ""))}
               className="flex flex-col items-center gap-2 rounded-xl border border-primary/10 bg-card p-4 shadow-sm transition-colors hover:bg-primary/5"
             >
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
