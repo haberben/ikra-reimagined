@@ -1,27 +1,79 @@
+import { useState, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import Index from "./pages/Index.tsx";
-import NotFound from "./pages/NotFound.tsx";
+import BottomNav from "@/components/layout/BottomNav";
+import InstallPrompt from "@/components/InstallPrompt";
+import Onboarding from "@/pages/Onboarding";
+import HomePage from "@/pages/HomePage";
+import PrayerTimesPage from "@/pages/PrayerTimesPage";
+import QuranPage from "@/pages/QuranPage";
+import GalleryPage from "@/pages/GalleryPage";
+import HatimPage from "@/pages/HatimPage";
+import NotificationsPage from "@/pages/NotificationsPage";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  const [onboarded, setOnboarded] = useState(() => localStorage.getItem("ikra_onboarded") === "true");
+  const [activeTab, setActiveTab] = useState("home");
+  const [city, setCity] = useState(() => localStorage.getItem("ikra_city") || "İstanbul");
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  if (!onboarded) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Sonner />
+          <Onboarding onComplete={() => {
+            setOnboarded(true);
+            setCity(localStorage.getItem("ikra_city") || "İstanbul");
+          }} />
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+  }
+
+  if (showNotifications) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Sonner />
+          <NotificationsPage onBack={() => setShowNotifications(false)} />
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+  }
+
+  const renderTab = () => {
+    switch (activeTab) {
+      case "home":
+        return <HomePage city={city} onNavigate={setActiveTab} onNotifications={() => setShowNotifications(true)} />;
+      case "times":
+        return <PrayerTimesPage city={city} setCity={setCity} onNotifications={() => setShowNotifications(true)} />;
+      case "quran":
+        return <QuranPage />;
+      case "gallery":
+        return <GalleryPage onNotifications={() => setShowNotifications(true)} />;
+      case "hatim":
+        return <HatimPage />;
+      default:
+        return <HomePage city={city} onNavigate={setActiveTab} onNotifications={() => setShowNotifications(true)} />;
+    }
+  };
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Sonner />
+        <InstallPrompt />
+        <div className="min-h-screen bg-background">
+          {renderTab()}
+          <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+        </div>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
