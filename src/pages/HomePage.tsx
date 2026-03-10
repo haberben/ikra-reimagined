@@ -44,6 +44,7 @@ export default function HomePage({ city, onNavigate, onNotifications, onZikirmat
         <StickyHeader
           dark
           showPattern={false}
+          onLeftClick={onMenuOpen}
           onRightClick={onNotifications}
           className="border-none bg-transparent"
         />
