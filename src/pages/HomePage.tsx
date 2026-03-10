@@ -32,6 +32,8 @@ export default function HomePage({ city, onNavigate, onNotifications, onZikirmat
         { key: "Sunrise", time: times.Sunrise },
         { key: "Dhuhr", time: times.Dhuhr },
         { key: "Asr", time: times.Asr },
+        { key: "Maghrib", time: times.Maghrib },
+        { key: "Isha", time: times.Isha },
       ]
     : [];
 
