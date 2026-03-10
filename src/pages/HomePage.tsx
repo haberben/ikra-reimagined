@@ -22,7 +22,7 @@ const DISCOVER_ITEMS = [
   { icon: "counter_1", label: "Zikirmatik", action: "zikirmatik" },
 ];
 
-export default function HomePage({ city, onNavigate, onNotifications, onZikirmatik }: HomePageProps) {
+export default function HomePage({ city, onNavigate, onNotifications, onZikirmatik, onMenuOpen }: HomePageProps) {
   const { times, hijri, loading } = usePrayerTimes(city);
   const { current, next, remaining, progress } = useCurrentPrayer(times);
 
