@@ -11,7 +11,7 @@ const TABS: Tab[] = [
   { id: "times", label: "Vakitler", icon: "schedule" },
   { id: "quran", label: "Kur'an", icon: "menu_book" },
   { id: "gallery", label: "Galeri", icon: "photo_library" },
-  { id: "hatim", label: "Profil", icon: "group" },
+  { id: "hatim", label: "Hatim", icon: "group" },
 ];
 
 interface BottomNavProps {

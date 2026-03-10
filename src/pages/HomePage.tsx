@@ -88,7 +88,7 @@ export default function HomePage({ city, onNavigate, onNotifications, onZikirmat
 
           {/* Mini prayer grid */}
           {miniPrayers.length > 0 && (
-            <div className="mt-4 grid grid-cols-4 gap-2">
+            <div className="mt-4 grid grid-cols-3 gap-2">
               {miniPrayers.map((p) => {
                 const isActive = PRAYER_LABELS[p.key] === current;
                 return (
