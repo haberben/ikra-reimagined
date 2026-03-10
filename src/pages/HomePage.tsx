@@ -6,6 +6,7 @@ interface HomePageProps {
   city: string;
   onNavigate: (tab: string) => void;
   onNotifications: () => void;
+  onZikirmatik: () => void;
 }
 
 const PRAYER_LABELS: Record<string, string> = {
