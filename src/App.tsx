@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,6 +11,7 @@ import QuranPage from "@/pages/QuranPage";
 import GalleryPage from "@/pages/GalleryPage";
 import HatimPage from "@/pages/HatimPage";
 import NotificationsPage from "@/pages/NotificationsPage";
+import ZikirmatikPage from "@/pages/ZikirmatikPage";
 
 const queryClient = new QueryClient();
 
@@ -19,6 +20,7 @@ const App = () => {
   const [activeTab, setActiveTab] = useState("home");
   const [city, setCity] = useState(() => localStorage.getItem("ikra_city") || "İstanbul");
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showZikirmatik, setShowZikirmatik] = useState(false);
 
   if (!onboarded) {
     return (
@@ -45,10 +47,21 @@ const App = () => {
     );
   }
 
+  if (showZikirmatik) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Sonner />
+          <ZikirmatikPage onBack={() => setShowZikirmatik(false)} />
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+  }
+
   const renderTab = () => {
     switch (activeTab) {
       case "home":
-        return <HomePage city={city} onNavigate={setActiveTab} onNotifications={() => setShowNotifications(true)} />;
+        return <HomePage city={city} onNavigate={setActiveTab} onNotifications={() => setShowNotifications(true)} onZikirmatik={() => setShowZikirmatik(true)} />;
       case "times":
         return <PrayerTimesPage city={city} setCity={setCity} onNotifications={() => setShowNotifications(true)} />;
       case "quran":
@@ -58,7 +71,7 @@ const App = () => {
       case "hatim":
         return <HatimPage />;
       default:
-        return <HomePage city={city} onNavigate={setActiveTab} onNotifications={() => setShowNotifications(true)} />;
+        return <HomePage city={city} onNavigate={setActiveTab} onNotifications={() => setShowNotifications(true)} onZikirmatik={() => setShowZikirmatik(true)} />;
     }
   };
 

@@ -6,6 +6,7 @@ interface HomePageProps {
   city: string;
   onNavigate: (tab: string) => void;
   onNotifications: () => void;
+  onZikirmatik: () => void;
 }
 
 const PRAYER_LABELS: Record<string, string> = {
@@ -14,13 +15,13 @@ const PRAYER_LABELS: Record<string, string> = {
 };
 
 const DISCOVER_ITEMS = [
-  { icon: "auto_stories", label: "Hatim", tab: "hatim" },
-  { icon: "wallpaper", label: "Duvar Kağıdı", tab: "gallery" },
-  { icon: "explore", label: "Kıble Bulucu", tab: "times" },
-  { icon: "counter_1", label: "Zikirmatik", tab: "" },
+  { icon: "auto_stories", label: "Hatim", action: "tab:hatim" },
+  { icon: "wallpaper", label: "Duvar Kağıdı", action: "tab:gallery" },
+  { icon: "explore", label: "Kıble Bulucu", action: "tab:times" },
+  { icon: "counter_1", label: "Zikirmatik", action: "zikirmatik" },
 ];
 
-export default function HomePage({ city, onNavigate, onNotifications }: HomePageProps) {
+export default function HomePage({ city, onNavigate, onNotifications, onZikirmatik }: HomePageProps) {
   const { times, hijri, loading } = usePrayerTimes(city);
   const { current, next, remaining, progress } = useCurrentPrayer(times);
 
@@ -139,7 +140,7 @@ export default function HomePage({ city, onNavigate, onNotifications }: HomePage
           {DISCOVER_ITEMS.map((item) => (
             <button
               key={item.label}
-              onClick={() => item.tab && onNavigate(item.tab)}
+              onClick={() => item.action === "zikirmatik" ? onZikirmatik() : item.action.startsWith("tab:") && onNavigate(item.action.replace("tab:", ""))}
               className="flex flex-col items-center gap-2 rounded-xl border border-primary/10 bg-card p-4 shadow-sm transition-colors hover:bg-primary/5"
             >
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
