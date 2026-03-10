@@ -61,7 +61,7 @@ const App = () => {
   const renderTab = () => {
     switch (activeTab) {
       case "home":
-        return <HomePage city={city} onNavigate={setActiveTab} onNotifications={() => setShowNotifications(true)} />;
+        return <HomePage city={city} onNavigate={setActiveTab} onNotifications={() => setShowNotifications(true)} onZikirmatik={() => setShowZikirmatik(true)} />;
       case "times":
         return <PrayerTimesPage city={city} setCity={setCity} onNotifications={() => setShowNotifications(true)} />;
       case "quran":
