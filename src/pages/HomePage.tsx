@@ -7,6 +7,7 @@ interface HomePageProps {
   onNavigate: (tab: string) => void;
   onNotifications: () => void;
   onZikirmatik: () => void;
+  onMenuOpen: () => void;
 }
 
 const PRAYER_LABELS: Record<string, string> = {
