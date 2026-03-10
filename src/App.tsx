@@ -20,6 +20,7 @@ const App = () => {
   const [activeTab, setActiveTab] = useState("home");
   const [city, setCity] = useState(() => localStorage.getItem("ikra_city") || "İstanbul");
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showZikirmatik, setShowZikirmatik] = useState(false);
 
   if (!onboarded) {
     return (
