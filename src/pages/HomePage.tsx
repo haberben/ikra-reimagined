@@ -15,10 +15,10 @@ const PRAYER_LABELS: Record<string, string> = {
 };
 
 const DISCOVER_ITEMS = [
-  { icon: "auto_stories", label: "Hatim", tab: "hatim" },
-  { icon: "wallpaper", label: "Duvar Kağıdı", tab: "gallery" },
-  { icon: "explore", label: "Kıble Bulucu", tab: "times" },
-  { icon: "counter_1", label: "Zikirmatik", tab: "" },
+  { icon: "auto_stories", label: "Hatim", action: "tab:hatim" },
+  { icon: "wallpaper", label: "Duvar Kağıdı", action: "tab:gallery" },
+  { icon: "explore", label: "Kıble Bulucu", action: "tab:times" },
+  { icon: "counter_1", label: "Zikirmatik", action: "zikirmatik" },
 ];
 
 export default function HomePage({ city, onNavigate, onNotifications }: HomePageProps) {
