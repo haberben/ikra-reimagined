@@ -10,29 +10,45 @@ interface Reciter {
   moshaf?: { server: string; supieces?: string }[];
 }
 
-interface Surah {
-  id: number;
-  name: string;
-  start_page?: number;
-  end_page?: number;
-}
+// Turkish name mappings for popular reciters
+const RECITER_TURKISH_NAMES: Record<number, string> = {
+  1: "Abdurrahman es-Sudeys",
+  2: "Abdul Basit Abdussamed",
+  3: "Maher el-Muaykili",
+  4: "Saad el-Gamidi",
+  5: "Mişari Raşid el-Afasi",
+  6: "Ahmed el-Acemi",
+  7: "Hani er-Rifai",
+  8: "Halid el-Celil",
+  9: "Faris Abbad",
+  10: "Yaser ed-Doseri",
+  11: "Abdullah Basfar",
+  12: "Ebu Bekir eş-Şatiri",
+  13: "Nasser el-Katami",
+  14: "Abdulmuhsin el-Kasım",
+  15: "Muhammed Eyyub",
+  16: "Mahmud Halil el-Husari",
+  17: "Muhammed Sıddık el-Minşavi",
+  18: "Ali Abdurrahman el-Huzeyfi",
+  19: "Abdullah el-Matrud",
+  20: "İdris Ebker",
+};
 
-// Cüz data
 const JUZ_DATA = Array.from({ length: 30 }, (_, i) => ({
   number: i + 1,
   name: `${i + 1}. Cüz`,
 }));
 
-const VIDEO_CATEGORIES = [
-  "Kur'an Öğreniyorum", "Tecvid Dersleri", "Tefsir", "Kıssalar", "Dualar", "İlmihal"
-];
-
-const SAMPLE_VIDEOS = [
-  { id: "dQw4w9WgXcQ", title: "Elif-Ba Dersleri" },
-  { id: "dQw4w9WgXcQ", title: "Namaz Sureleri" },
-  { id: "dQw4w9WgXcQ", title: "Yasin Suresi Tefsiri" },
-  { id: "dQw4w9WgXcQ", title: "Hz. Yusuf Kıssası" },
-  { id: "dQw4w9WgXcQ", title: "Sabah-Akşam Duaları" },
+// Real videos from @kuranmektebi playlist PL9AtecotAGkQqGRBR7PwLzgtliMA3XhRV
+const PLAYLIST_VIDEOS = [
+  { id: "MTbLZij7oAs", title: "Ok Takipli Hatim - 1. Cüz", cuz: 1 },
+  { id: "LZXcTAk1vFA", title: "Ok Takipli Hatim - 2. Cüz", cuz: 2 },
+  { id: "LDdMFFGnXqY", title: "Ok Takipli Hatim - 3. Cüz", cuz: 3 },
+  { id: "AJcTNzlekLU", title: "Ok Takipli Hatim - 4. Cüz", cuz: 4 },
+  { id: "vVcVO01kNgU", title: "Ok Takipli Hatim - 5. Cüz", cuz: 5 },
+  { id: "z8SX3_rv6ws", title: "Ok Takipli Hatim - 6. Cüz", cuz: 6 },
+  { id: "JSS48YKwlOI", title: "Ok Takipli Hatim - 7. Cüz", cuz: 7 },
+  { id: "dDtzLHC4U_4", title: "Ok Takipli Hatim - 8. Cüz", cuz: 8 },
 ];
 
 export default function QuranPage() {
@@ -42,7 +58,7 @@ export default function QuranPage() {
   const [playingJuz, setPlayingJuz] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioProgress, setAudioProgress] = useState(0);
-  const [selectedCategory, setSelectedCategory] = useState(VIDEO_CATEGORIES[0]);
+  const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
@@ -62,15 +78,21 @@ export default function QuranPage() {
     const padded = String(juzNum).padStart(3, "0");
     const url = `${server}${padded}.mp3`;
 
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
+    if (audioRef.current) audioRef.current.pause();
     const audio = new Audio(url);
     audioRef.current = audio;
     audio.play().catch(console.error);
     setPlayingJuz(juzNum);
     setIsPlaying(true);
     setAudioProgress(0);
+
+    // Save last read
+    localStorage.setItem("ikra_last_read", JSON.stringify({
+      surah: `${juzNum}. Cüz`,
+      juz: juzNum,
+      page: (juzNum - 1) * 20 + 1,
+      reciterId: selectedReciter.id,
+    }));
 
     audio.addEventListener("timeupdate", () => {
       if (audio.duration) setAudioProgress((audio.currentTime / audio.duration) * 100);
@@ -87,15 +109,25 @@ export default function QuranPage() {
     else { audioRef.current.play(); setIsPlaying(true); }
   };
 
+  const handleResume = () => {
+    const lastRead = JSON.parse(localStorage.getItem("ikra_last_read") || '{"juz":1}');
+    // If we have a saved reciter, try to select it
+    if (lastRead.reciterId) {
+      const found = reciters.find((r) => r.id === lastRead.reciterId);
+      if (found) setSelectedReciter(found);
+    }
+    playJuz(lastRead.juz || 1);
+  };
+
   const lastRead = JSON.parse(localStorage.getItem("ikra_last_read") || '{"surah":"el-Fâtiha","juz":1,"page":1}');
+
+  const getReciterTurkishName = (r: Reciter) => {
+    return RECITER_TURKISH_NAMES[r.id] || r.name;
+  };
 
   return (
     <div className="pb-36">
-      <StickyHeader
-        title="İKRA"
-        subtitle="QURAN LIBRARY"
-        rightIcon="search"
-      />
+      <StickyHeader title="İKRA" subtitle="QURAN LIBRARY" rightIcon="search" />
 
       {/* Sub tabs */}
       <div className="flex border-b border-primary/10">
@@ -128,7 +160,7 @@ export default function QuranPage() {
             <p className="mt-1 text-sm opacity-70">
               Juz {lastRead.juz} • Page {lastRead.page} • {lastRead.juz}. Cüz
             </p>
-            <GoldButton className="mt-4 text-foreground" icon="play_arrow">
+            <GoldButton className="mt-4 text-foreground" icon="play_arrow" onClick={handleResume}>
               DEVAM ET
             </GoldButton>
           </div>
@@ -144,6 +176,7 @@ export default function QuranPage() {
             <div className="mt-3 flex gap-4 overflow-x-auto scrollbar-hide pb-2">
               {reciters.map((r) => {
                 const isSelected = selectedReciter?.id === r.id;
+                const turkishName = getReciterTurkishName(r);
                 return (
                   <button
                     key={r.id}
@@ -161,7 +194,10 @@ export default function QuranPage() {
                         </div>
                       )}
                     </div>
-                    <span className="w-20 truncate text-center text-[10px] font-medium">
+                    <span className="w-20 text-center text-[10px] font-medium leading-tight">
+                      {turkishName}
+                    </span>
+                    <span className="w-20 truncate text-center text-[8px] text-muted-foreground font-arabic">
                       {r.name}
                     </span>
                   </button>
@@ -220,28 +256,49 @@ export default function QuranPage() {
       ) : (
         /* Video tab */
         <div className="px-4 pt-4">
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-3">
-            {VIDEO_CATEGORIES.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={cn(
-                  "shrink-0 rounded-full px-4 py-2 text-xs font-medium",
-                  selectedCategory === cat
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-primary/5 border border-primary/10"
-                )}
-              >
-                {cat}
-              </button>
-            ))}
+          <div className="mb-4 rounded-xl border border-primary/10 bg-card p-4 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="material-symbols-outlined text-primary">playlist_play</span>
+              <h3 className="text-sm font-bold">Ok Takipli Hatim — @kuranmektebi</h3>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Diyanet İşleri Başkanlığı ok takipli Kur'an-ı Kerim ve Meali
+            </p>
           </div>
+
           <div className="space-y-4">
-            {SAMPLE_VIDEOS.map((v, i) => (
-              <div key={i} className="rounded-xl border border-primary/10 bg-card overflow-hidden shadow-sm">
-                <div className="aspect-video bg-primary/5 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[48px] text-primary/30">play_circle</span>
-                </div>
+            {PLAYLIST_VIDEOS.map((v) => (
+              <div key={v.id} className="rounded-xl border border-primary/10 bg-card overflow-hidden shadow-sm">
+                {playingVideoId === v.id ? (
+                  <div className="aspect-video">
+                    <iframe
+                      src={`https://www.youtube.com/embed/${v.id}?autoplay=1&rel=0`}
+                      className="h-full w-full"
+                      allow="autoplay; encrypted-media"
+                      allowFullScreen
+                      title={v.title}
+                    />
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setPlayingVideoId(v.id)}
+                    className="relative aspect-video w-full bg-primary/5"
+                  >
+                    <img
+                      src={`https://img.youtube.com/vi/${v.id}/mqdefault.jpg`}
+                      alt={v.title}
+                      className="h-full w-full object-cover"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/90">
+                        <span className="material-symbols-outlined text-primary-foreground text-[28px]">play_arrow</span>
+                      </div>
+                    </div>
+                    <div className="absolute bottom-2 left-2 rounded bg-black/70 px-2 py-0.5 text-xs font-medium text-white">
+                      {v.cuz}. Cüz
+                    </div>
+                  </button>
+                )}
                 <div className="p-3">
                   <p className="font-bold text-sm">{v.title}</p>
                   <p className="text-xs text-muted-foreground mt-1">@kuranmektebi</p>
@@ -256,11 +313,12 @@ export default function QuranPage() {
       {playingJuz && (
         <div className="fixed bottom-16 left-0 right-0 z-40 border-t border-primary/10 bg-card/95 backdrop-blur-md px-4 py-2">
           <div className="flex items-center gap-3">
-            <div className="flex-1">
-              <p className="text-xs font-bold truncate">{selectedReciter?.name || "Hafız"}</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold truncate">
+                {selectedReciter ? getReciterTurkishName(selectedReciter) : "Hafız"}
+              </p>
               <p className="text-[10px] text-muted-foreground">{playingJuz}. Cüz</p>
             </div>
-            {/* Progress */}
             <div className="flex-1 h-1 rounded-full bg-primary/10 overflow-hidden">
               <div className="h-full gold-gradient transition-all" style={{ width: `${audioProgress}%` }} />
             </div>

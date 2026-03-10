@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import BottomNav from "@/components/layout/BottomNav";
 import InstallPrompt from "@/components/InstallPrompt";
+import MenuDrawer from "@/components/layout/MenuDrawer";
 import Onboarding from "@/pages/Onboarding";
 import HomePage from "@/pages/HomePage";
 import PrayerTimesPage from "@/pages/PrayerTimesPage";
@@ -21,6 +22,7 @@ const App = () => {
   const [city, setCity] = useState(() => localStorage.getItem("ikra_city") || "İstanbul");
   const [showNotifications, setShowNotifications] = useState(false);
   const [showZikirmatik, setShowZikirmatik] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
 
   if (!onboarded) {
     return (
@@ -61,7 +63,7 @@ const App = () => {
   const renderTab = () => {
     switch (activeTab) {
       case "home":
-        return <HomePage city={city} onNavigate={setActiveTab} onNotifications={() => setShowNotifications(true)} onZikirmatik={() => setShowZikirmatik(true)} />;
+        return <HomePage city={city} onNavigate={setActiveTab} onNotifications={() => setShowNotifications(true)} onZikirmatik={() => setShowZikirmatik(true)} onMenuOpen={() => setShowMenu(true)} />;
       case "times":
         return <PrayerTimesPage city={city} setCity={setCity} onNotifications={() => setShowNotifications(true)} />;
       case "quran":
@@ -71,7 +73,7 @@ const App = () => {
       case "hatim":
         return <HatimPage />;
       default:
-        return <HomePage city={city} onNavigate={setActiveTab} onNotifications={() => setShowNotifications(true)} onZikirmatik={() => setShowZikirmatik(true)} />;
+        return <HomePage city={city} onNavigate={setActiveTab} onNotifications={() => setShowNotifications(true)} onZikirmatik={() => setShowZikirmatik(true)} onMenuOpen={() => setShowMenu(true)} />;
     }
   };
 
@@ -84,6 +86,18 @@ const App = () => {
           {renderTab()}
           <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
         </div>
+        <MenuDrawer
+          open={showMenu}
+          onClose={() => setShowMenu(false)}
+          onNavigate={(target) => {
+            setShowMenu(false);
+            if (target === "notifications") setShowNotifications(true);
+            else if (target === "zikirmatik") setShowZikirmatik(true);
+            else setActiveTab(target);
+          }}
+          city={city}
+          userName={localStorage.getItem("ikra_name") || ""}
+        />
       </TooltipProvider>
     </QueryClientProvider>
   );
