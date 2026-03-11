@@ -31,8 +31,12 @@ export default function PrayerTimesPage({ city, setCity, onNotifications, onMenu
   const { times, loading } = usePrayerTimes(city);
   const { ayet, hadis } = useDailyContent();
   const { toggleFavorite, isFavorite } = useFavorites();
-  const [notifications, setNotifications] = useState<Record<string, boolean>>({});
-  const [notifTimes, setNotifTimes] = useState<Record<string, string>>({});
+  const [notifications, setNotifications] = useState<Record<string, boolean>>(() => {
+    try { return JSON.parse(localStorage.getItem("ikra_prayer_notifs") || "{}"); } catch { return {}; }
+  });
+  const [notifTimes, setNotifTimes] = useState<Record<string, string>>(() => {
+    try { return JSON.parse(localStorage.getItem("ikra_prayer_notif_times") || "{}"); } catch { return {}; }
+  });
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [compassHeading, setCompassHeading] = useState<number | null>(null);
@@ -166,7 +170,11 @@ export default function PrayerTimesPage({ city, setCity, onNotifications, onMenu
                     {notifications[p.key] && (
                       <select
                         value={notifTimes[p.key] || "Vakitte"}
-                        onChange={(e) => setNotifTimes({ ...notifTimes, [p.key]: e.target.value })}
+                        onChange={(e) => {
+                          const updated = { ...notifTimes, [p.key]: e.target.value };
+                          setNotifTimes(updated);
+                          localStorage.setItem("ikra_prayer_notif_times", JSON.stringify(updated));
+                        }}
                         className="rounded-lg bg-secondary px-2 py-1 text-xs"
                       >
                         {TIME_OPTIONS.map((t) => (
@@ -175,7 +183,11 @@ export default function PrayerTimesPage({ city, setCity, onNotifications, onMenu
                       </select>
                     )}
                     <button
-                      onClick={() => setNotifications({ ...notifications, [p.key]: !notifications[p.key] })}
+                      onClick={() => {
+                        const updated = { ...notifications, [p.key]: !notifications[p.key] };
+                        setNotifications(updated);
+                        localStorage.setItem("ikra_prayer_notifs", JSON.stringify(updated));
+                      }}
                       className={cn(
                         "h-[31px] w-[51px] rounded-full transition-colors",
                         notifications[p.key] ? "bg-primary" : "bg-muted"
