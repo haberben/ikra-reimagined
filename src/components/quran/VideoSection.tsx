@@ -1,6 +1,40 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+
+// Load YouTube IFrame API once
+let ytApiLoaded = false;
+let ytApiPromise: Promise<void> | null = null;
+function loadYTApi(): Promise<void> {
+  if (ytApiLoaded && window.YT?.Player) return Promise.resolve();
+  if (ytApiPromise) return ytApiPromise;
+  ytApiPromise = new Promise((resolve) => {
+    if (window.YT?.Player) { ytApiLoaded = true; resolve(); return; }
+    const existing = document.getElementById("yt-iframe-api");
+    if (!existing) {
+      const tag = document.createElement("script");
+      tag.id = "yt-iframe-api";
+      tag.src = "https://www.youtube.com/iframe_api";
+      document.head.appendChild(tag);
+    }
+    const prev = (window as any).onYouTubeIframeAPIReady;
+    (window as any).onYouTubeIframeAPIReady = () => {
+      ytApiLoaded = true;
+      prev?.();
+      resolve();
+    };
+    // If API already loaded between checks
+    const check = setInterval(() => {
+      if (window.YT?.Player) { ytApiLoaded = true; clearInterval(check); resolve(); }
+    }, 200);
+    setTimeout(() => clearInterval(check), 10000);
+  });
+  return ytApiPromise;
+}
+
+declare global {
+  interface Window { YT: any; }
+}
 
 interface VideoPlaylist {
   id: string;
@@ -22,6 +56,147 @@ interface PlaylistVideo {
   title: string;
   thumbnail_url: string | null;
   sort_order: number;
+}
+// Separate component to safely use hooks
+function VideoPlayer({
+  videoId,
+  videos,
+  playlist,
+  isVideoWatched,
+  toggleWatched,
+  onNext,
+  onPrev,
+}: {
+  videoId: string;
+  videos: PlaylistVideo[];
+  playlist: VideoPlaylist;
+  isVideoWatched: (vid: string, pid: string) => boolean;
+  toggleWatched: (e: React.MouseEvent, vid: string, pid: string) => void;
+  onNext: () => void;
+  onPrev: () => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const playerRef = useRef<any>(null);
+  const onNextRef = useRef(onNext);
+  onNextRef.current = onNext;
+
+  const currentIndex = videos.findIndex(v => v.youtube_video_id === videoId);
+  const currentVideo = videos.find(v => v.youtube_video_id === videoId);
+  const hasPrev = currentIndex > 0;
+  const hasNext = currentIndex < videos.length - 1;
+
+  useEffect(() => {
+    let destroyed = false;
+
+    const init = async () => {
+      try {
+        await loadYTApi();
+      } catch {
+        // Fallback: if API fails, just use iframe
+        return;
+      }
+      if (destroyed || !containerRef.current) return;
+
+      // Destroy old player
+      if (playerRef.current) {
+        try { playerRef.current.destroy(); } catch {}
+        playerRef.current = null;
+      }
+
+      // Create container div for player
+      const div = document.createElement("div");
+      div.id = "yt-player-" + Date.now();
+      containerRef.current.innerHTML = "";
+      containerRef.current.appendChild(div);
+
+      try {
+        playerRef.current = new window.YT.Player(div.id, {
+          videoId,
+          width: "100%",
+          height: "100%",
+          playerVars: { rel: 0, modestbranding: 1, playsinline: 1 },
+          events: {
+            onStateChange: (event: any) => {
+              // YT.PlayerState.ENDED === 0
+              if (event.data === 0) {
+                onNextRef.current();
+              }
+            },
+          },
+        });
+      } catch (err) {
+        console.error("YT Player init error:", err);
+      }
+    };
+
+    init();
+
+    return () => {
+      destroyed = true;
+      if (playerRef.current) {
+        try { playerRef.current.destroy(); } catch {}
+        playerRef.current = null;
+      }
+    };
+  }, [videoId]);
+
+  return (
+    <div className="rounded-xl overflow-hidden border border-primary/10 shadow-sm mb-4">
+      <div className="aspect-video bg-black" ref={containerRef} />
+      <div className="p-3 bg-card">
+        <div className="flex items-center justify-between">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold line-clamp-2">{currentVideo?.title}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Video {currentIndex + 1} / {videos.length}
+            </p>
+          </div>
+          <button
+            onClick={(e) => toggleWatched(e, videoId, playlist.id)}
+            className={cn(
+              "shrink-0 ml-3 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+              isVideoWatched(videoId, playlist.id)
+                ? "bg-primary/10 text-primary"
+                : "bg-muted text-muted-foreground"
+            )}
+          >
+            <span
+              className="material-symbols-outlined text-[16px]"
+              style={isVideoWatched(videoId, playlist.id) ? { fontVariationSettings: "'FILL' 1" } : {}}
+            >
+              {isVideoWatched(videoId, playlist.id) ? "check_circle" : "radio_button_unchecked"}
+            </span>
+            {isVideoWatched(videoId, playlist.id) ? "İzlendi" : "İzlendi işaretle"}
+          </button>
+        </div>
+        {/* Prev / Next buttons */}
+        <div className="flex items-center justify-center gap-4 mt-3">
+          <button
+            onClick={onPrev}
+            disabled={!hasPrev}
+            className={cn(
+              "flex items-center gap-1 rounded-full px-4 py-2 text-xs font-medium transition-colors",
+              hasPrev ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground/40"
+            )}
+          >
+            <span className="material-symbols-outlined text-[18px]">skip_previous</span>
+            Önceki
+          </button>
+          <button
+            onClick={onNext}
+            disabled={!hasNext}
+            className={cn(
+              "flex items-center gap-1 rounded-full px-4 py-2 text-xs font-medium transition-colors",
+              hasNext ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground/40"
+            )}
+          >
+            Sonraki
+            <span className="material-symbols-outlined text-[18px]">skip_next</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function VideoSection() {
@@ -177,46 +352,30 @@ export default function VideoSection() {
             <>
               {/* Active video player */}
               {activeVideoId && (
-                <div className="rounded-xl overflow-hidden border border-primary/10 shadow-sm mb-4">
-                  <div className="aspect-video">
-                    <iframe
-                      key={activeVideoId}
-                      src={`https://www.youtube.com/embed/${activeVideoId}?rel=0`}
-                      className="h-full w-full"
-                      allow="autoplay; encrypted-media; picture-in-picture"
-                      allowFullScreen
-                      title={videos.find(v => v.youtube_video_id === activeVideoId)?.title || ""}
-                    />
-                  </div>
-                  <div className="p-3 bg-card flex items-center justify-between">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold line-clamp-2">
-                        {videos.find(v => v.youtube_video_id === activeVideoId)?.title}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Video {(videos.findIndex(v => v.youtube_video_id === activeVideoId) + 1)} / {videos.length}
-                      </p>
-                    </div>
-                    {/* Mark as watched button */}
-                    <button
-                      onClick={(e) => toggleWatched(e, activeVideoId, activePlaylist.id)}
-                      className={cn(
-                        "shrink-0 ml-3 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
-                        isVideoWatched(activeVideoId, activePlaylist.id)
-                          ? "bg-primary/10 text-primary"
-                          : "bg-muted text-muted-foreground"
-                      )}
-                    >
-                      <span
-                        className="material-symbols-outlined text-[16px]"
-                        style={isVideoWatched(activeVideoId, activePlaylist.id) ? { fontVariationSettings: "'FILL' 1" } : {}}
-                      >
-                        {isVideoWatched(activeVideoId, activePlaylist.id) ? "check_circle" : "radio_button_unchecked"}
-                      </span>
-                      {isVideoWatched(activeVideoId, activePlaylist.id) ? "İzlendi" : "İzlendi işaretle"}
-                    </button>
-                  </div>
-                </div>
+                <VideoPlayer
+                  videoId={activeVideoId}
+                  videos={videos}
+                  playlist={activePlaylist}
+                  isVideoWatched={isVideoWatched}
+                  toggleWatched={toggleWatched}
+                  onNext={() => {
+                    const idx = videos.findIndex(v => v.youtube_video_id === activeVideoId);
+                    if (idx < videos.length - 1) {
+                      const nextVideo = videos[idx + 1];
+                      selectVideo(nextVideo.youtube_video_id, activePlaylist.id);
+                      // Mark current as watched
+                      if (!isVideoWatched(activeVideoId, activePlaylist.id)) {
+                        toggleWatched({ stopPropagation: () => {} } as React.MouseEvent, activeVideoId, activePlaylist.id);
+                      }
+                    }
+                  }}
+                  onPrev={() => {
+                    const idx = videos.findIndex(v => v.youtube_video_id === activeVideoId);
+                    if (idx > 0) {
+                      selectVideo(videos[idx - 1].youtube_video_id, activePlaylist.id);
+                    }
+                  }}
+                />
               )}
 
               {/* Search bar */}
