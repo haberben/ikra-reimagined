@@ -207,6 +207,60 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
     fetchWallpapers();
   };
 
+  // ============ AI WALLPAPER GENERATOR ============
+  const fetchContentForGenerator = async () => {
+    const { data } = await supabase.from("daily_content").select("id, type, arabic_text, turkish_text, source").order("date", { ascending: false }).limit(200);
+    if (data) setAiContentList(data);
+  };
+
+  const handleSelectContent = (id: string) => {
+    setAiSelectedContent(id);
+    const item = aiContentList.find((c: any) => c.id === id);
+    if (item) {
+      setAiArabic(item.arabic_text);
+      setAiTurkish(item.turkish_text);
+      setAiSource(item.source || "");
+      setAiType(item.type);
+    }
+  };
+
+  const handleGenerateWallpaper = async () => {
+    if (!aiArabic.trim() || !aiTurkish.trim()) return;
+    setAiGenerating(true);
+    setAiResult(null);
+    setAiError(null);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Oturum bulunamadı");
+
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-wallpaper`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          arabic_text: aiArabic.trim(),
+          turkish_text: aiTurkish.trim(),
+          source: aiSource.trim() || null,
+          type: aiType,
+          style: aiStyle,
+        }),
+      });
+
+      const result = await resp.json();
+      if (!resp.ok) throw new Error(result.error || "Üretim başarısız");
+
+      setAiResult(result.image_url);
+      fetchWallpapers();
+    } catch (e: any) {
+      setAiError(e.message);
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
   // ============ DAILY CONTENT ============
   const fetchDailyContent = async () => {
     const { data } = await supabase.from("daily_content").select("*").order("date", { ascending: false }).limit(30);
