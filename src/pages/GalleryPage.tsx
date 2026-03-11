@@ -12,6 +12,7 @@ interface WallpaperItem {
   turkish_text: string | null;
   category: string;
   image_url: string;
+  contributor_name?: string | null;
 }
 
 interface GalleryPageProps {
