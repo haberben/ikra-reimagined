@@ -1,16 +1,21 @@
-// Force cache invalidation
+import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 
-// Register service worker with enhanced capabilities
+// Register service worker
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
+      // Unregister old SWs first to clear stale cache
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for (const reg of registrations) {
+        await reg.unregister();
+      }
+      
       const reg = await navigator.serviceWorker.register('/sw.js');
       console.log('SW registered:', reg.scope);
 
-      // Listen for SW messages (for showing notifications from SW)
       navigator.serviceWorker.addEventListener('message', (e) => {
         if (e.data?.type === 'SHOW_NOTIFICATION' && Notification.permission === 'granted') {
           const { title, body, tag, icon } = e.data.payload;
@@ -18,11 +23,10 @@ if ('serviceWorker' in navigator) {
         }
       });
 
-      // Register periodic sync if supported
       if ('periodicSync' in reg) {
         try {
           await (reg as any).periodicSync.register('update-prayer-times', {
-            minInterval: 12 * 60 * 60 * 1000, // 12 hours
+            minInterval: 12 * 60 * 60 * 1000,
           });
         } catch {
           // Periodic sync not available
@@ -34,4 +38,8 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-createRoot(document.getElementById("root")!).render(<App />);
+createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
