@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -29,7 +29,14 @@ const App = () => {
   const [showAdmin, setShowAdmin] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [pageTransition, setPageTransition] = useState(false);
-  
+  const [dark, setDark] = useState(() => localStorage.getItem("ikra_theme") === "dark");
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", dark);
+    localStorage.setItem("ikra_theme", dark ? "dark" : "light");
+  }, [dark]);
+
+  const toggleDark = () => setDark((d) => !d);
 
   const handleMenuOpen = () => setShowMenu(true);
 
@@ -142,6 +149,8 @@ const App = () => {
           onNavigate={handleMenuNavigate}
           city={city}
           userName={localStorage.getItem("ikra_name") || ""}
+          dark={dark}
+          onToggleDark={toggleDark}
         />
       </TooltipProvider>
     </QueryClientProvider>
