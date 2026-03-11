@@ -40,6 +40,18 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
   const [wpCategory, setWpCategory] = useState("Günün Ayeti");
   const [wpSaving, setWpSaving] = useState(false);
 
+  // AI Wallpaper generator state
+  const [aiArabic, setAiArabic] = useState("");
+  const [aiTurkish, setAiTurkish] = useState("");
+  const [aiSource, setAiSource] = useState("");
+  const [aiType, setAiType] = useState<"ayet" | "hadis">("ayet");
+  const [aiStyle, setAiStyle] = useState("dark elegant");
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiResult, setAiResult] = useState<string | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiContentList, setAiContentList] = useState<any[]>([]);
+  const [aiSelectedContent, setAiSelectedContent] = useState<string>("");
+
   // Daily content state
   const [dailyItems, setDailyItems] = useState<any[]>([]);
   const [dcType, setDcType] = useState<"ayet" | "hadis">("ayet");
