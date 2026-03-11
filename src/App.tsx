@@ -28,7 +28,13 @@ const App = () => {
   const [showAdmin, setShowAdmin] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [pageTransition, setPageTransition] = useState(false);
-  const { dark, toggle: toggleDark } = useTheme();
+  const [dark, setDark] = useState(() => localStorage.getItem("ikra_theme") === "dark");
+  const toggleDark = () => setDark(d => !d);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", dark);
+    localStorage.setItem("ikra_theme", dark ? "dark" : "light");
+  }, [dark]);
 
   const handleMenuOpen = () => setShowMenu(true);
 
