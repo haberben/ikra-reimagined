@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import BottomNav from "@/components/layout/BottomNav";
 import InstallPrompt from "@/components/InstallPrompt";
 import MenuDrawer from "@/components/layout/MenuDrawer";
+import { useTheme } from "@/hooks/useTheme";
 import Onboarding from "@/pages/Onboarding";
 import HomePage from "@/pages/HomePage";
 import PrayerTimesPage from "@/pages/PrayerTimesPage";
@@ -13,6 +14,7 @@ import GalleryPage from "@/pages/GalleryPage";
 import HatimPage from "@/pages/HatimPage";
 import NotificationsPage from "@/pages/NotificationsPage";
 import ZikirmatikPage from "@/pages/ZikirmatikPage";
+import DailyContentAdmin from "@/components/DailyContentAdmin";
 
 const queryClient = new QueryClient();
 
@@ -22,7 +24,9 @@ const App = () => {
   const [city, setCity] = useState(() => localStorage.getItem("ikra_city") || "İstanbul");
   const [showNotifications, setShowNotifications] = useState(false);
   const [showZikirmatik, setShowZikirmatik] = useState(false);
+  const [showDailyAdmin, setShowDailyAdmin] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const { dark, toggle: toggleDark } = useTheme();
 
   const handleMenuOpen = () => setShowMenu(true);
   const handleNotifications = () => setShowNotifications(true);
@@ -32,6 +36,7 @@ const App = () => {
     setShowMenu(false);
     if (target === "notifications") setShowNotifications(true);
     else if (target === "zikirmatik") setShowZikirmatik(true);
+    else if (target === "daily_admin") setShowDailyAdmin(true);
     else setActiveTab(target);
   };
 
@@ -93,6 +98,7 @@ const App = () => {
       <TooltipProvider>
         <Sonner />
         <InstallPrompt />
+        {showDailyAdmin && <DailyContentAdmin onClose={() => setShowDailyAdmin(false)} />}
         <div className="min-h-screen bg-background">
           {renderTab()}
           <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
@@ -103,6 +109,8 @@ const App = () => {
           onNavigate={handleMenuNavigate}
           city={city}
           userName={localStorage.getItem("ikra_name") || ""}
+          dark={dark}
+          onToggleDark={toggleDark}
         />
       </TooltipProvider>
     </QueryClientProvider>

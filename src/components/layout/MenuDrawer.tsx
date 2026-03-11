@@ -6,6 +6,8 @@ interface MenuDrawerProps {
   onNavigate: (target: string) => void;
   city: string;
   userName: string;
+  dark?: boolean;
+  onToggleDark?: () => void;
 }
 
 const MENU_ITEMS = [
@@ -17,9 +19,10 @@ const MENU_ITEMS = [
   { icon: "counter_1", label: "Zikirmatik", target: "zikirmatik" },
   { icon: "notifications", label: "Bildirimler", target: "notifications" },
   { icon: "explore", label: "Kıble Bulucu", target: "times" },
+  { icon: "edit_calendar", label: "Günlük İçerik (Admin)", target: "daily_admin" },
 ];
 
-export default function MenuDrawer({ open, onClose, onNavigate, city, userName }: MenuDrawerProps) {
+export default function MenuDrawer({ open, onClose, onNavigate, city, userName, dark, onToggleDark }: MenuDrawerProps) {
   if (!open) return null;
 
   return (
@@ -60,7 +63,21 @@ export default function MenuDrawer({ open, onClose, onNavigate, city, userName }
         </div>
 
         {/* Footer */}
-        <div className="absolute bottom-0 left-0 right-0 border-t border-primary/10 p-4">
+        <div className="absolute bottom-0 left-0 right-0 border-t border-primary/10 p-4 space-y-3">
+          {onToggleDark && (
+            <button
+              onClick={onToggleDark}
+              className="flex w-full items-center justify-between rounded-lg bg-secondary px-4 py-2.5"
+            >
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <span className="material-symbols-outlined text-[18px]">{dark ? "light_mode" : "dark_mode"}</span>
+                <span>{dark ? "Açık Tema" : "Koyu Tema"}</span>
+              </div>
+              <div className={cn("h-5 w-9 rounded-full transition-colors", dark ? "bg-primary" : "bg-muted-foreground/30")}>
+                <div className={cn("h-5 w-5 rounded-full bg-card shadow transition-transform", dark ? "translate-x-4" : "translate-x-0")} />
+              </div>
+            </button>
+          )}
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span className="material-symbols-outlined text-[16px]">info</span>
             <span>İKRA v1.0 — Namaz & Kur'an</span>
