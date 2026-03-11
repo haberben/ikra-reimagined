@@ -76,7 +76,8 @@ export default function QuranPage({ onMenuOpen, onNotifications }: QuranPageProp
       .catch(console.error);
   }, []);
 
-  const getReciterTurkishName = (r: Reciter) => RECITER_TURKISH_NAMES[r.name] || r.name;
+  const getReciterTurkishName = (r: Reciter) => RECITER_TURKISH_NAMES[r.name] || null;
+  const getDisplayName = (r: Reciter) => RECITER_TURKISH_NAMES[r.name] || r.name;
 
   const playJuz = (juzNum: number) => {
     if (!selectedReciter?.moshaf?.[0]) return;
@@ -172,8 +173,12 @@ export default function QuranPage({ onMenuOpen, onNotifications }: QuranPageProp
                         </div>
                       )}
                     </div>
-                    <span className="w-20 text-center text-[10px] font-medium leading-tight">{turkishName}</span>
-                    <span className="w-20 truncate text-center text-[8px] text-muted-foreground font-arabic">{r.name}</span>
+                    <span className="w-20 text-center text-[10px] font-medium leading-tight">
+                      {turkishName || r.name}
+                    </span>
+                    {turkishName && (
+                      <span className="w-20 truncate text-center text-[8px] text-muted-foreground font-arabic" dir="rtl">{r.name}</span>
+                    )}
                   </button>
                 );
               })}
@@ -213,7 +218,7 @@ export default function QuranPage({ onMenuOpen, onNotifications }: QuranPageProp
         <div className="fixed bottom-16 left-0 right-0 z-40 border-t border-primary/10 bg-card/95 backdrop-blur-md px-4 py-2">
           <div className="flex items-center gap-3">
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold truncate">{selectedReciter ? getReciterTurkishName(selectedReciter) : "Hafız"}</p>
+              <p className="text-xs font-bold truncate">{selectedReciter ? getDisplayName(selectedReciter) : "Hafız"}</p>
               <p className="text-[10px] text-muted-foreground">{playingJuz}. Cüz</p>
             </div>
             <div className="flex-1 h-1 rounded-full bg-primary/10 overflow-hidden">
