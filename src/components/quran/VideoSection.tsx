@@ -211,46 +211,30 @@ export default function VideoSection() {
             <>
               {/* Active video player */}
               {activeVideoId && (
-                <div className="rounded-xl overflow-hidden border border-primary/10 shadow-sm mb-4">
-                  <div className="aspect-video">
-                    <iframe
-                      key={activeVideoId}
-                      src={`https://www.youtube.com/embed/${activeVideoId}?rel=0`}
-                      className="h-full w-full"
-                      allow="autoplay; encrypted-media; picture-in-picture"
-                      allowFullScreen
-                      title={videos.find(v => v.youtube_video_id === activeVideoId)?.title || ""}
-                    />
-                  </div>
-                  <div className="p-3 bg-card flex items-center justify-between">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold line-clamp-2">
-                        {videos.find(v => v.youtube_video_id === activeVideoId)?.title}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Video {(videos.findIndex(v => v.youtube_video_id === activeVideoId) + 1)} / {videos.length}
-                      </p>
-                    </div>
-                    {/* Mark as watched button */}
-                    <button
-                      onClick={(e) => toggleWatched(e, activeVideoId, activePlaylist.id)}
-                      className={cn(
-                        "shrink-0 ml-3 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
-                        isVideoWatched(activeVideoId, activePlaylist.id)
-                          ? "bg-primary/10 text-primary"
-                          : "bg-muted text-muted-foreground"
-                      )}
-                    >
-                      <span
-                        className="material-symbols-outlined text-[16px]"
-                        style={isVideoWatched(activeVideoId, activePlaylist.id) ? { fontVariationSettings: "'FILL' 1" } : {}}
-                      >
-                        {isVideoWatched(activeVideoId, activePlaylist.id) ? "check_circle" : "radio_button_unchecked"}
-                      </span>
-                      {isVideoWatched(activeVideoId, activePlaylist.id) ? "İzlendi" : "İzlendi işaretle"}
-                    </button>
-                  </div>
-                </div>
+                <VideoPlayer
+                  videoId={activeVideoId}
+                  videos={videos}
+                  playlist={activePlaylist}
+                  isVideoWatched={isVideoWatched}
+                  toggleWatched={toggleWatched}
+                  onNext={() => {
+                    const idx = videos.findIndex(v => v.youtube_video_id === activeVideoId);
+                    if (idx < videos.length - 1) {
+                      const nextVideo = videos[idx + 1];
+                      selectVideo(nextVideo.youtube_video_id, activePlaylist.id);
+                      // Mark current as watched
+                      if (!isVideoWatched(activeVideoId, activePlaylist.id)) {
+                        toggleWatched({ stopPropagation: () => {} } as React.MouseEvent, activeVideoId, activePlaylist.id);
+                      }
+                    }
+                  }}
+                  onPrev={() => {
+                    const idx = videos.findIndex(v => v.youtube_video_id === activeVideoId);
+                    if (idx > 0) {
+                      selectVideo(videos[idx - 1].youtube_video_id, activePlaylist.id);
+                    }
+                  }}
+                />
               )}
 
               {/* Search bar */}
