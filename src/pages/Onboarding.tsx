@@ -42,17 +42,18 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         <h2 className="mt-2 text-xl font-bold">Şehrinizi Seçin</h2>
         <p className="text-sm text-muted-foreground">Namaz vakitlerini doğru gösterelim</p>
       </div>
-      <div className="relative">
-        <span className="material-symbols-outlined absolute left-3 top-3 text-muted-foreground">search</span>
+      <div className="flex items-center gap-2 rounded-xl border border-primary/10 bg-card px-4 py-3">
+        <span className="material-symbols-outlined text-muted-foreground text-[20px] shrink-0">location_on</span>
         <select
           value={city}
           onChange={(e) => setCity(e.target.value)}
-          className="w-full appearance-none rounded-xl border border-primary/10 bg-card py-3 pl-10 pr-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20"
+          className="w-full appearance-none bg-transparent text-sm font-medium focus:outline-none"
         >
           {TURKISH_CITIES.map((c) => (
             <option key={c} value={c}>{c}</option>
           ))}
         </select>
+        <span className="material-symbols-outlined text-muted-foreground text-[18px] shrink-0">expand_more</span>
       </div>
       <GoldButton onClick={() => setStep(2)} fullWidth>
         Devam Et
