@@ -29,7 +29,7 @@ const App = () => {
   const [showAdmin, setShowAdmin] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [pageTransition, setPageTransition] = useState(false);
-  const { dark, toggle: toggleDark } = useTheme();
+  
 
   const handleMenuOpen = () => setShowMenu(true);
 
