@@ -1,1 +1,4 @@
 project_id = "oehjqwvpeplgadxrmsrf"
+
+[functions.generate-wallpaper]
+verify_jwt = false
