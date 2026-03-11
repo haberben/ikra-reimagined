@@ -28,7 +28,7 @@ export default function SuggestionsPage({ onBack }: SuggestionsPageProps) {
   const [authError, setAuthError] = useState("");
 
   const [category, setCategory] = useState<Category>("ayet");
-  const [displayName, setDisplayName] = useState(() => localStorage.getItem("ikra_name") || "");
+  const [displayName, setDisplayName] = useState("");
   const [arabicText, setArabicText] = useState("");
   const [turkishText, setTurkishText] = useState("");
   const [source, setSource] = useState("");
