@@ -34,6 +34,10 @@ export default function SuggestionsPage({ onBack }: SuggestionsPageProps) {
   const [source, setSource] = useState("");
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
 
