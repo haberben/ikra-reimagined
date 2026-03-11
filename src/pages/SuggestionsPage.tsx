@@ -34,6 +34,10 @@ export default function SuggestionsPage({ onBack }: SuggestionsPageProps) {
   const [source, setSource] = useState("");
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
 
@@ -89,22 +93,48 @@ export default function SuggestionsPage({ onBack }: SuggestionsPageProps) {
     if (category === "playlist" && !youtubeUrl.trim()) {
       toast.error("YouTube playlist linki gerekli"); return;
     }
-    if (category === "wallpaper" && !imageUrl.trim()) {
-      toast.error("Görsel URL'si gerekli"); return;
+    if (category === "wallpaper" && !imageUrl.trim() && !imageFile) {
+      toast.error("Görsel yükleyin veya URL girin"); return;
     }
 
     setSending(true);
+
+    let finalImageUrl = imageUrl.trim() || null;
+    let finalCoverUrl: string | null = null;
+
+    // Upload wallpaper image if file selected
+    if (category === "wallpaper" && imageFile) {
+      const ext = imageFile.name.split(".").pop();
+      const path = `wallpapers/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage.from("suggestions").upload(path, imageFile);
+      if (uploadError) { toast.error("Görsel yüklenemedi: " + uploadError.message); setSending(false); return; }
+      const { data: urlData } = supabase.storage.from("suggestions").getPublicUrl(uploadData.path);
+      finalImageUrl = urlData.publicUrl;
+    }
+
+    // Upload playlist cover if file selected
+    if (category === "playlist" && coverFile) {
+      const ext = coverFile.name.split(".").pop();
+      const path = `covers/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage.from("suggestions").upload(path, coverFile);
+      if (uploadError) { toast.error("Kapak görseli yüklenemedi"); setSending(false); return; }
+      const { data: urlData } = supabase.storage.from("suggestions").getPublicUrl(uploadData.path);
+      finalCoverUrl = urlData.publicUrl;
+    }
+
     const { error } = await supabase.from("suggestions").insert({
       user_id: userId,
       user_display_name: displayName.trim(),
       category,
       title: title.trim() || null,
-      description: description.trim() || null,
+      description: (category === "playlist" && finalCoverUrl)
+        ? `${description.trim() || ""}|||cover:${finalCoverUrl}`
+        : description.trim() || null,
       arabic_text: arabicText.trim() || null,
       turkish_text: turkishText.trim() || null,
       source: source.trim() || null,
       youtube_url: youtubeUrl.trim() || null,
-      image_url: imageUrl.trim() || null,
+      image_url: finalImageUrl,
     } as any);
 
     if (error) {
@@ -114,6 +144,7 @@ export default function SuggestionsPage({ onBack }: SuggestionsPageProps) {
       // Reset form
       setArabicText(""); setTurkishText(""); setSource("");
       setYoutubeUrl(""); setImageUrl(""); setTitle(""); setDescription("");
+      setImageFile(null); setImagePreview(null); setCoverFile(null); setCoverPreview(null);
       fetchMySuggestions(userId);
     }
     setSending(false);
@@ -243,17 +274,87 @@ export default function SuggestionsPage({ onBack }: SuggestionsPageProps) {
                     rows={2}
                     className="w-full rounded-lg border border-primary/10 bg-card px-3 py-2.5 text-sm text-foreground resize-none"
                   />
+                  {/* Optional cover image */}
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground">Kapak görseli (opsiyonel)</p>
+                    <div className="flex gap-2">
+                      <label className="flex-1 flex items-center justify-center gap-2 rounded-lg border border-dashed border-primary/20 bg-primary/5 px-3 py-3 text-xs font-medium text-primary cursor-pointer hover:bg-primary/10 transition-colors">
+                        <span className="material-symbols-outlined text-[18px]">upload</span>
+                        {coverFile ? coverFile.name.substring(0, 20) + "..." : "Dosya Yükle"}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) {
+                              setCoverFile(f);
+                              setCoverPreview(URL.createObjectURL(f));
+                            }
+                          }}
+                        />
+                      </label>
+                    </div>
+                    {coverPreview && (
+                      <div className="relative">
+                        <img src={coverPreview} alt="Kapak önizleme" className="w-full h-24 object-cover rounded-lg" />
+                        <button
+                          onClick={() => { setCoverFile(null); setCoverPreview(null); }}
+                          className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/50"
+                        >
+                          <span className="material-symbols-outlined text-white text-[14px]">close</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </>
               )}
 
               {category === "wallpaper" && (
                 <>
-                  <input
-                    placeholder="Görsel URL'si *"
-                    value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
-                    className="w-full rounded-lg border border-primary/10 bg-card px-3 py-2.5 text-sm text-foreground"
-                  />
+                  {/* Upload or URL toggle */}
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium">Görsel ekleyin *</p>
+                    <label className="flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-primary/20 bg-primary/5 px-3 py-4 text-sm font-medium text-primary cursor-pointer hover:bg-primary/10 transition-colors">
+                      <span className="material-symbols-outlined text-[22px]">add_photo_alternate</span>
+                      {imageFile ? imageFile.name.substring(0, 30) + "..." : "Görsel Yükle"}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) {
+                            setImageFile(f);
+                            setImagePreview(URL.createObjectURL(f));
+                            setImageUrl("");
+                          }
+                        }}
+                      />
+                    </label>
+                    {imagePreview && (
+                      <div className="relative">
+                        <img src={imagePreview} alt="Önizleme" className="w-full h-48 object-cover rounded-lg" />
+                        <button
+                          onClick={() => { setImageFile(null); setImagePreview(null); }}
+                          className="absolute top-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/50"
+                        >
+                          <span className="material-symbols-outlined text-white text-[16px]">close</span>
+                        </button>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-px bg-primary/10" />
+                      <span className="text-[10px] text-muted-foreground">veya</span>
+                      <div className="flex-1 h-px bg-primary/10" />
+                    </div>
+                    <input
+                      placeholder="Görsel URL'si yapıştırın"
+                      value={imageUrl}
+                      onChange={(e) => { setImageUrl(e.target.value); if (e.target.value) { setImageFile(null); setImagePreview(null); } }}
+                      className="w-full rounded-lg border border-primary/10 bg-card px-3 py-2.5 text-sm text-foreground"
+                    />
+                  </div>
                   <textarea
                     placeholder="Açıklama (opsiyonel — hangi ayet/hadis vs.)"
                     value={description}
