@@ -93,22 +93,48 @@ export default function SuggestionsPage({ onBack }: SuggestionsPageProps) {
     if (category === "playlist" && !youtubeUrl.trim()) {
       toast.error("YouTube playlist linki gerekli"); return;
     }
-    if (category === "wallpaper" && !imageUrl.trim()) {
-      toast.error("Görsel URL'si gerekli"); return;
+    if (category === "wallpaper" && !imageUrl.trim() && !imageFile) {
+      toast.error("Görsel yükleyin veya URL girin"); return;
     }
 
     setSending(true);
+
+    let finalImageUrl = imageUrl.trim() || null;
+    let finalCoverUrl: string | null = null;
+
+    // Upload wallpaper image if file selected
+    if (category === "wallpaper" && imageFile) {
+      const ext = imageFile.name.split(".").pop();
+      const path = `wallpapers/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage.from("suggestions").upload(path, imageFile);
+      if (uploadError) { toast.error("Görsel yüklenemedi: " + uploadError.message); setSending(false); return; }
+      const { data: urlData } = supabase.storage.from("suggestions").getPublicUrl(uploadData.path);
+      finalImageUrl = urlData.publicUrl;
+    }
+
+    // Upload playlist cover if file selected
+    if (category === "playlist" && coverFile) {
+      const ext = coverFile.name.split(".").pop();
+      const path = `covers/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage.from("suggestions").upload(path, coverFile);
+      if (uploadError) { toast.error("Kapak görseli yüklenemedi"); setSending(false); return; }
+      const { data: urlData } = supabase.storage.from("suggestions").getPublicUrl(uploadData.path);
+      finalCoverUrl = urlData.publicUrl;
+    }
+
     const { error } = await supabase.from("suggestions").insert({
       user_id: userId,
       user_display_name: displayName.trim(),
       category,
       title: title.trim() || null,
-      description: description.trim() || null,
+      description: (category === "playlist" && finalCoverUrl)
+        ? `${description.trim() || ""}|||cover:${finalCoverUrl}`
+        : description.trim() || null,
       arabic_text: arabicText.trim() || null,
       turkish_text: turkishText.trim() || null,
       source: source.trim() || null,
       youtube_url: youtubeUrl.trim() || null,
-      image_url: imageUrl.trim() || null,
+      image_url: finalImageUrl,
     } as any);
 
     if (error) {
