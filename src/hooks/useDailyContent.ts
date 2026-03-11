@@ -8,6 +8,7 @@ interface DailyContent {
   source: string | null;
   type: string;
   date: string;
+  contributor_name?: string | null;
 }
 
 export function useDailyContent() {
