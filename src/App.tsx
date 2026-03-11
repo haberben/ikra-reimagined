@@ -149,6 +149,8 @@ const App = () => {
           onNavigate={handleMenuNavigate}
           city={city}
           userName={localStorage.getItem("ikra_name") || ""}
+          dark={dark}
+          onToggleDark={toggleDark}
         />
       </TooltipProvider>
     </QueryClientProvider>
