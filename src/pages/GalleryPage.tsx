@@ -94,20 +94,6 @@ export default function GalleryPage({ onNotifications, onMenuOpen }: GalleryPage
               <div key={w.id} className="flex flex-col gap-2">
                 <div className="relative aspect-[9/16] overflow-hidden rounded-xl bg-gradient-to-b from-primary/20 to-primary/40">
                   <img src={w.image_url} alt={w.turkish_text || w.category} className="absolute inset-0 h-full w-full object-cover" />
-                  {(w.arabic_text || w.turkish_text) && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-black/30">
-                      {w.arabic_text && (
-                        <p className="font-arabic text-lg text-center leading-relaxed text-white" dir="rtl">
-                          {w.arabic_text}
-                        </p>
-                      )}
-                      {w.turkish_text && (
-                        <p className="mt-2 text-center text-[9px] uppercase tracking-widest text-white/80">
-                          {w.turkish_text}
-                        </p>
-                      )}
-                    </div>
-                  )}
                   <div className="absolute right-2 top-2 flex gap-1.5">
                     <button
                       onClick={() => toggleFavorite(w.id, "wallpaper")}
