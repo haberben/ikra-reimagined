@@ -91,13 +91,12 @@ export function schedulePrayerNotifications(
         ? `${name} namazına ${offsetMinutes} dakika kaldı`
         : `${name} namazı vakti girdi`;
 
-      const id = scheduleLocalNotification(
+      scheduleLocalNotification(
         `🕌 ${name} Vakti`,
         bodyText,
         delay,
         `prayer-${key}`
-      );
-      if (id !== null) timerIds.push(id);
+      ).then(id => { if (id !== null) timerIds.push(id); });
     }
   });
 
