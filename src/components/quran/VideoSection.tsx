@@ -113,6 +113,70 @@ export default function VideoSection() {
     localStorage.setItem("ikra_video_progress_v2", JSON.stringify(updated));
   };
 
+  // Auto-play next video when current ends
+  const playNextVideo = useCallback(() => {
+    if (!activePlaylist || !activeVideoId) return;
+    const currentIndex = videos.findIndex((v) => v.youtube_video_id === activeVideoId);
+    // Mark current as watched
+    const current = watchedVideos[activePlaylist.id] || [];
+    if (!current.includes(activeVideoId)) {
+      const updatedWatched = {
+        ...watchedVideos,
+        [activePlaylist.id]: [...current, activeVideoId],
+      };
+      setWatchedVideos(updatedWatched);
+      localStorage.setItem("ikra_watched_videos", JSON.stringify(updatedWatched));
+    }
+    // Play next
+    if (currentIndex >= 0 && currentIndex < videos.length - 1) {
+      const nextVideo = videos[currentIndex + 1];
+      selectVideo(nextVideo.youtube_video_id, activePlaylist.id);
+    }
+  }, [activePlaylist, activeVideoId, videos, watchedVideos]);
+
+  // Initialize/update YouTube player
+  useEffect(() => {
+    if (!activeVideoId || !playerContainerRef.current) return;
+    
+    const initPlayer = async () => {
+      await loadYTApi();
+      const YT = (window as any).YT;
+      if (!YT?.Player) return;
+
+      // Destroy existing player
+      if (playerRef.current) {
+        try { playerRef.current.destroy(); } catch {}
+        playerRef.current = null;
+      }
+
+      playerRef.current = new YT.Player(playerContainerRef.current, {
+        videoId: activeVideoId,
+        playerVars: {
+          rel: 0,
+          autoplay: 1,
+          playsinline: 1,
+        },
+        events: {
+          onStateChange: (event: any) => {
+            // YT.PlayerState.ENDED === 0
+            if (event.data === 0) {
+              playNextVideo();
+            }
+          },
+        },
+      });
+    };
+
+    initPlayer();
+
+    return () => {
+      if (playerRef.current) {
+        try { playerRef.current.destroy(); } catch {}
+        playerRef.current = null;
+      }
+    };
+  }, [activeVideoId, playNextVideo]);
+
   const toggleWatched = (e: React.MouseEvent, videoId: string, playlistId: string) => {
     e.stopPropagation();
     const current = watchedVideos[playlistId] || [];
