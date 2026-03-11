@@ -69,6 +69,8 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
   const [vidCover, setVidCover] = useState<File | null>(null);
   const [vidSaving, setVidSaving] = useState(false);
   const [vidEditId, setVidEditId] = useState<string | null>(null);
+  const [syncingPlaylistId, setSyncingPlaylistId] = useState<string | null>(null);
+  const [syncResult, setSyncResult] = useState<Record<string, string>>({});
 
   // Notification state
   const [notifTitle, setNotifTitle] = useState("");
