@@ -24,6 +24,7 @@ const App = () => {
   const [city, setCity] = useState(() => localStorage.getItem("ikra_city") || "İstanbul");
   const [showNotifications, setShowNotifications] = useState(false);
   const [showZikirmatik, setShowZikirmatik] = useState(false);
+  const [showDailyAdmin, setShowDailyAdmin] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const { dark, toggle: toggleDark } = useTheme();
 
@@ -35,6 +36,7 @@ const App = () => {
     setShowMenu(false);
     if (target === "notifications") setShowNotifications(true);
     else if (target === "zikirmatik") setShowZikirmatik(true);
+    else if (target === "daily_admin") setShowDailyAdmin(true);
     else setActiveTab(target);
   };
 
