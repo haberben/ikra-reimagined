@@ -24,6 +24,17 @@ const App = () => {
   const [showZikirmatik, setShowZikirmatik] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
 
+  const handleMenuOpen = () => setShowMenu(true);
+  const handleNotifications = () => setShowNotifications(true);
+  const handleZikirmatik = () => setShowZikirmatik(true);
+
+  const handleMenuNavigate = (target: string) => {
+    setShowMenu(false);
+    if (target === "notifications") setShowNotifications(true);
+    else if (target === "zikirmatik") setShowZikirmatik(true);
+    else setActiveTab(target);
+  };
+
   if (!onboarded) {
     return (
       <QueryClientProvider client={queryClient}>
@@ -63,17 +74,17 @@ const App = () => {
   const renderTab = () => {
     switch (activeTab) {
       case "home":
-        return <HomePage city={city} onNavigate={setActiveTab} onNotifications={() => setShowNotifications(true)} onZikirmatik={() => setShowZikirmatik(true)} onMenuOpen={() => setShowMenu(true)} />;
+        return <HomePage city={city} onNavigate={setActiveTab} onNotifications={handleNotifications} onZikirmatik={handleZikirmatik} onMenuOpen={handleMenuOpen} />;
       case "times":
-        return <PrayerTimesPage city={city} setCity={setCity} onNotifications={() => setShowNotifications(true)} />;
+        return <PrayerTimesPage city={city} setCity={setCity} onNotifications={handleNotifications} onMenuOpen={handleMenuOpen} />;
       case "quran":
-        return <QuranPage />;
+        return <QuranPage onMenuOpen={handleMenuOpen} onNotifications={handleNotifications} />;
       case "gallery":
-        return <GalleryPage onNotifications={() => setShowNotifications(true)} />;
+        return <GalleryPage onNotifications={handleNotifications} onMenuOpen={handleMenuOpen} />;
       case "hatim":
-        return <HatimPage />;
+        return <HatimPage onMenuOpen={handleMenuOpen} onNotifications={handleNotifications} />;
       default:
-        return <HomePage city={city} onNavigate={setActiveTab} onNotifications={() => setShowNotifications(true)} onZikirmatik={() => setShowZikirmatik(true)} onMenuOpen={() => setShowMenu(true)} />;
+        return <HomePage city={city} onNavigate={setActiveTab} onNotifications={handleNotifications} onZikirmatik={handleZikirmatik} onMenuOpen={handleMenuOpen} />;
     }
   };
 
@@ -89,12 +100,7 @@ const App = () => {
         <MenuDrawer
           open={showMenu}
           onClose={() => setShowMenu(false)}
-          onNavigate={(target) => {
-            setShowMenu(false);
-            if (target === "notifications") setShowNotifications(true);
-            else if (target === "zikirmatik") setShowZikirmatik(true);
-            else setActiveTab(target);
-          }}
+          onNavigate={handleMenuNavigate}
           city={city}
           userName={localStorage.getItem("ikra_name") || ""}
         />

@@ -1,44 +1,92 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import StickyHeader from "@/components/layout/StickyHeader";
 import { cn } from "@/lib/utils";
 
 const CATEGORIES = ["Tümü", "Günün Ayeti", "Hadis-i Şerifler", "Hat Sanatı", "Manzara"];
 
 interface WallpaperItem {
-  id: number;
-  arabic: string;
-  turkish: string;
+  id: string;
+  arabic_text: string;
+  turkish_text: string;
   category: string;
-  bgColor: string;
+  image_url: string;
 }
 
-const MOCK_WALLPAPERS: WallpaperItem[] = [
-  { id: 1, arabic: "بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ", turkish: "Rahman ve Rahim olan Allah'ın adıyla", category: "Günün Ayeti", bgColor: "from-emerald-800 to-emerald-950" },
-  { id: 2, arabic: "إِنَّ اللَّهَ مَعَ الصَّابِرِينَ", turkish: "Allah sabredenlerle beraberdir", category: "Günün Ayeti", bgColor: "from-teal-800 to-slate-900" },
-  { id: 3, arabic: "وَذَكِّرْ فَإِنَّ الذِّكْرَىٰ تَنفَعُ الْمُؤْمِنِينَ", turkish: "Hatırlat, çünkü hatırlatma müminlere fayda verir", category: "Hadis-i Şerifler", bgColor: "from-amber-900 to-stone-900" },
-  { id: 4, arabic: "رَبِّ اشْرَحْ لِي صَدْرِي", turkish: "Rabbim göğsümü aç", category: "Günün Ayeti", bgColor: "from-sky-900 to-indigo-950" },
-  { id: 5, arabic: "سُبْحَانَ اللَّهِ وَبِحَمْدِهِ", turkish: "Allah'ı hamd ile tesbih ederim", category: "Hat Sanatı", bgColor: "from-rose-900 to-stone-900" },
-  { id: 6, arabic: "لَا إِلَٰهَ إِلَّا اللَّهُ", turkish: "Allah'tan başka ilah yoktur", category: "Hat Sanatı", bgColor: "from-green-900 to-emerald-950" },
-  { id: 7, arabic: "اللَّهُمَّ صَلِّ عَلَىٰ مُحَمَّدٍ", turkish: "Allah'ım Muhammed'e salat et", category: "Hadis-i Şerifler", bgColor: "from-violet-900 to-slate-950" },
-  { id: 8, arabic: "وَمَا تَوْفِيقِي إِلَّا بِاللَّهِ", turkish: "Başarım ancak Allah'tandır", category: "Manzara", bgColor: "from-cyan-900 to-teal-950" },
-];
+interface GalleryPageProps {
+  onNotifications: () => void;
+  onMenuOpen: () => void;
+}
 
-export default function GalleryPage({ onNotifications }: { onNotifications: () => void }) {
+export default function GalleryPage({ onNotifications, onMenuOpen }: GalleryPageProps) {
   const [activeCategory, setActiveCategory] = useState("Tümü");
   const [search, setSearch] = useState("");
+  const [wallpapers, setWallpapers] = useState<WallpaperItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showAdmin, setShowAdmin] = useState(false);
   const [adminPassword, setAdminPassword] = useState("");
   const [adminAuthed, setAdminAuthed] = useState(false);
 
-  const filtered = MOCK_WALLPAPERS.filter((w) => {
+  // Admin form
+  const [formArabic, setFormArabic] = useState("");
+  const [formTurkish, setFormTurkish] = useState("");
+  const [formCategory, setFormCategory] = useState("Günün Ayeti");
+  const [formFile, setFormFile] = useState<File | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetchWallpapers();
+  }, []);
+
+  const fetchWallpapers = async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from("wallpapers")
+      .select("*")
+      .order("uploaded_at", { ascending: false });
+    if (data) setWallpapers(data);
+    setLoading(false);
+  };
+
+  const handleUpload = async () => {
+    if (!formFile || !formArabic.trim() || !formTurkish.trim()) return;
+    setSaving(true);
+
+    const ext = formFile.name.split(".").pop();
+    const path = `wallpapers/${Date.now()}.${ext}`;
+    const { data: uploadData } = await supabase.storage
+      .from("video-covers")
+      .upload(path, formFile);
+
+    if (uploadData) {
+      const { data: urlData } = supabase.storage
+        .from("video-covers")
+        .getPublicUrl(uploadData.path);
+
+      await supabase.from("wallpapers").insert({
+        arabic_text: formArabic.trim(),
+        turkish_text: formTurkish.trim(),
+        category: formCategory,
+        image_url: urlData.publicUrl,
+      });
+
+      setFormArabic("");
+      setFormTurkish("");
+      setFormFile(null);
+      fetchWallpapers();
+    }
+    setSaving(false);
+  };
+
+  const filtered = wallpapers.filter((w) => {
     if (activeCategory !== "Tümü" && w.category !== activeCategory) return false;
-    if (search && !w.turkish.toLowerCase().includes(search.toLowerCase())) return false;
+    if (search && !w.turkish_text.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
 
   return (
     <div className="pb-20">
-      <StickyHeader title="İKRA" onRightClick={onNotifications} />
+      <StickyHeader title="İKRA" subtitle="GALERİ" onLeftClick={onMenuOpen} onRightClick={onNotifications} />
 
       <div className="px-4 pt-4">
         {/* Search */}
@@ -72,42 +120,41 @@ export default function GalleryPage({ onNotifications }: { onNotifications: () =
         </div>
 
         {/* Wallpaper grid */}
-        <div className="grid grid-cols-2 gap-3 mt-2">
-          {filtered.map((w) => (
-            <div key={w.id} className="flex flex-col gap-2">
-              <div className={cn(
-                "relative aspect-[9/16] overflow-hidden rounded-xl bg-gradient-to-b",
-                w.bgColor
-              )}>
-                {/* Content */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
-                  <p className="font-arabic text-lg text-center leading-relaxed text-white" dir="rtl">
-                    {w.arabic}
-                  </p>
-                  <p className="mt-2 text-center text-[9px] uppercase tracking-widest text-white/80">
-                    {w.turkish}
-                  </p>
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <span className="material-symbols-outlined animate-spin text-primary">progress_activity</span>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-12">
+            <span className="material-symbols-outlined text-[48px] text-muted-foreground/30">wallpaper</span>
+            <p className="mt-2 text-sm text-muted-foreground">Henüz duvar kağıdı eklenmedi</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3 mt-2">
+            {filtered.map((w) => (
+              <div key={w.id} className="flex flex-col gap-2">
+                <div className="relative aspect-[9/16] overflow-hidden rounded-xl bg-gradient-to-b from-primary/20 to-primary/40">
+                  <img src={w.image_url} alt={w.turkish_text} className="absolute inset-0 h-full w-full object-cover" />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-black/30">
+                    <p className="font-arabic text-lg text-center leading-relaxed text-white" dir="rtl">
+                      {w.arabic_text}
+                    </p>
+                    <p className="mt-2 text-center text-[9px] uppercase tracking-widest text-white/80">
+                      {w.turkish_text}
+                    </p>
+                  </div>
+                  <button className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/20 backdrop-blur">
+                    <span className="material-symbols-outlined text-white text-[16px]">download</span>
+                  </button>
                 </div>
-                {/* Gradient overlay */}
-                <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/80 to-transparent" />
-                {/* Download button */}
-                <button className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/20 backdrop-blur">
-                  <span className="material-symbols-outlined text-white text-[16px]">download</span>
-                </button>
               </div>
-              <button className="rounded-lg bg-primary/10 px-3 py-2 text-xs font-bold uppercase tracking-wide text-primary transition-colors hover:bg-primary hover:text-primary-foreground">
-                Ayarla
-              </button>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* Admin button */}
         <div className="mt-8 text-center">
-          <button
-            onClick={() => setShowAdmin(true)}
-            className="text-xs text-muted-foreground underline"
-          >
+          <button onClick={() => setShowAdmin(true)} className="text-xs text-muted-foreground underline">
             Admin Paneli
           </button>
         </div>
@@ -138,24 +185,42 @@ export default function GalleryPage({ onNotifications }: { onNotifications: () =
         )}
 
         {showAdmin && adminAuthed && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-            <div className="w-full max-w-sm rounded-xl bg-card p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold">Duvar Kağıdı Yükle</h3>
-                <button onClick={() => { setShowAdmin(false); setAdminAuthed(false); }}>
-                  <span className="material-symbols-outlined">close</span>
-                </button>
-              </div>
-              <div className="space-y-3">
-                <input type="file" accept="image/*" className="w-full text-sm" />
-                <input placeholder="Arapça metin" className="w-full rounded-lg border border-primary/10 px-3 py-2 text-sm" />
-                <input placeholder="Türkçe metin" className="w-full rounded-lg border border-primary/10 px-3 py-2 text-sm" />
-                <select className="w-full rounded-lg border border-primary/10 px-3 py-2 text-sm">
-                  {CATEGORIES.filter(c => c !== "Tümü").map(c => <option key={c}>{c}</option>)}
-                </select>
-                <button className="w-full rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground">
-                  Yükle (Supabase bağlantısı gerekli)
-                </button>
+          <div className="fixed inset-0 z-50 overflow-auto bg-background">
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-primary/10 bg-card px-4 py-3">
+              <h3 className="text-lg font-bold">Duvar Kağıdı Yükle</h3>
+              <button onClick={() => { setShowAdmin(false); setAdminAuthed(false); }}>
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <div className="p-4 space-y-3">
+              <input type="file" accept="image/*" onChange={(e) => setFormFile(e.target.files?.[0] || null)} className="w-full text-sm" />
+              <input placeholder="Arapça metin" value={formArabic} onChange={(e) => setFormArabic(e.target.value)} className="w-full rounded-lg border border-primary/10 px-3 py-2 text-sm" />
+              <input placeholder="Türkçe metin" value={formTurkish} onChange={(e) => setFormTurkish(e.target.value)} className="w-full rounded-lg border border-primary/10 px-3 py-2 text-sm" />
+              <select value={formCategory} onChange={(e) => setFormCategory(e.target.value)} className="w-full rounded-lg border border-primary/10 px-3 py-2 text-sm">
+                {CATEGORIES.filter(c => c !== "Tümü").map(c => <option key={c}>{c}</option>)}
+              </select>
+              <button
+                onClick={handleUpload}
+                disabled={saving || !formFile || !formArabic.trim() || !formTurkish.trim()}
+                className="w-full rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50"
+              >
+                {saving ? "Yükleniyor..." : "Yükle"}
+              </button>
+
+              {/* Existing wallpapers list */}
+              <div className="mt-6">
+                <h4 className="text-sm font-bold mb-3">Mevcut ({wallpapers.length})</h4>
+                <div className="space-y-2">
+                  {wallpapers.map((w) => (
+                    <div key={w.id} className="flex items-center gap-3 rounded-xl border border-primary/10 bg-card p-3">
+                      <img src={w.image_url} alt="" className="h-12 w-12 rounded-lg object-cover" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold truncate">{w.turkish_text}</p>
+                        <p className="text-[10px] text-muted-foreground">{w.category}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

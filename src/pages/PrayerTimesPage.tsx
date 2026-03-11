@@ -8,6 +8,7 @@ interface PrayerTimesPageProps {
   city: string;
   setCity: (c: string) => void;
   onNotifications: () => void;
+  onMenuOpen: () => void;
 }
 
 const PRAYERS = [
@@ -20,7 +21,7 @@ const PRAYERS = [
 
 const TIME_OPTIONS = ["Vakitte", "5 dk önce", "10 dk önce", "15 dk önce", "30 dk önce"];
 
-export default function PrayerTimesPage({ city, setCity, onNotifications }: PrayerTimesPageProps) {
+export default function PrayerTimesPage({ city, setCity, onNotifications, onMenuOpen }: PrayerTimesPageProps) {
   const { times, loading } = usePrayerTimes(city);
   const [notifications, setNotifications] = useState<Record<string, boolean>>({});
   const [notifTimes, setNotifTimes] = useState<Record<string, string>>({});
@@ -47,6 +48,7 @@ export default function PrayerTimesPage({ city, setCity, onNotifications }: Pray
       <StickyHeader
         title="İKRA"
         subtitle="NAMAZ VAKİTLERİ"
+        onLeftClick={onMenuOpen}
         onRightClick={onNotifications}
       />
 
