@@ -98,6 +98,7 @@ const App = () => {
       <TooltipProvider>
         <Sonner />
         <InstallPrompt />
+        {showDailyAdmin && <DailyContentAdmin onClose={() => setShowDailyAdmin(false)} />}
         <div className="min-h-screen bg-background">
           {renderTab()}
           <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
