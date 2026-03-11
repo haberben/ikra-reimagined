@@ -831,6 +831,117 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
           </div>
         )}
 
+        {/* ===== SUGGESTIONS TAB ===== */}
+        {activeTab === "suggestions" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-bold">Gelen Öneriler</h4>
+              <button onClick={fetchSuggestions} className="text-xs text-primary font-medium flex items-center gap-1">
+                <span className="material-symbols-outlined text-[14px]">refresh</span>
+                Yenile
+              </button>
+            </div>
+
+            {suggestionsLoading ? (
+              <div className="flex justify-center py-8">
+                <span className="material-symbols-outlined animate-spin text-primary">progress_activity</span>
+              </div>
+            ) : suggestions.length === 0 ? (
+              <div className="text-center py-8">
+                <span className="material-symbols-outlined text-[40px] text-muted-foreground/30">lightbulb</span>
+                <p className="text-sm text-muted-foreground mt-2">Henüz öneri gelmedi</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {suggestions.map((s) => {
+                  const isPending = s.status === "pending";
+                  const isApproved = s.status === "approved";
+                  return (
+                    <div key={s.id} className={cn(
+                      "rounded-xl border bg-card p-4",
+                      isPending ? "border-yellow-500/30" : isApproved ? "border-primary/20" : "border-destructive/20"
+                    )}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className={cn(
+                            "text-[10px] font-bold uppercase px-2 py-0.5 rounded-full",
+                            s.category === "ayet" ? "bg-primary/10 text-primary" :
+                            s.category === "hadis" ? "bg-accent/10 text-accent-foreground" :
+                            s.category === "wallpaper" ? "bg-purple-500/10 text-purple-600" :
+                            "bg-blue-500/10 text-blue-600"
+                          )}>
+                            {s.category}
+                          </span>
+                          <span className={cn(
+                            "text-[10px] font-bold px-2 py-0.5 rounded-full",
+                            isPending ? "bg-yellow-500/10 text-yellow-600" :
+                            isApproved ? "bg-primary/10 text-primary" :
+                            "bg-destructive/10 text-destructive"
+                          )}>
+                            {isPending ? "Bekliyor" : isApproved ? "Onaylandı" : "Reddedildi"}
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground">
+                          {new Date(s.created_at).toLocaleDateString("tr-TR")}
+                        </span>
+                      </div>
+
+                      {/* User info */}
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="material-symbols-outlined text-[16px] text-muted-foreground">person</span>
+                        <span className="text-xs font-medium">{s.user_display_name}</span>
+                      </div>
+
+                      {/* Content preview */}
+                      {s.arabic_text && (
+                        <p className="text-xs font-arabic mb-1" dir="rtl">{s.arabic_text.substring(0, 100)}...</p>
+                      )}
+                      {s.turkish_text && (
+                        <p className="text-xs text-muted-foreground mb-1">{s.turkish_text.substring(0, 120)}...</p>
+                      )}
+                      {s.source && (
+                        <p className="text-[10px] text-primary mb-1">📖 {s.source}</p>
+                      )}
+                      {s.youtube_url && (
+                        <p className="text-[10px] text-blue-500 mb-1 truncate">🔗 {s.youtube_url}</p>
+                      )}
+                      {s.image_url && (
+                        <img src={s.image_url} alt="" className="w-full h-32 object-cover rounded-lg mb-2" />
+                      )}
+                      {s.title && (
+                        <p className="text-xs font-bold mb-1">{s.title}</p>
+                      )}
+                      {s.description && (
+                        <p className="text-xs text-muted-foreground mb-1">{s.description}</p>
+                      )}
+
+                      {/* Actions */}
+                      {isPending && (
+                        <div className="flex gap-2 mt-3 pt-2 border-t border-primary/5">
+                          <button
+                            onClick={() => approveSuggestion(s)}
+                            className="flex-1 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-primary-foreground flex items-center justify-center gap-1"
+                          >
+                            <span className="material-symbols-outlined text-[14px]">check_circle</span>
+                            Onayla & Yayınla
+                          </button>
+                          <button
+                            onClick={() => rejectSuggestion(s.id, "Uygun görülmedi")}
+                            className="flex-1 rounded-lg bg-destructive/10 px-3 py-2 text-xs font-bold text-destructive flex items-center justify-center gap-1"
+                          >
+                            <span className="material-symbols-outlined text-[14px]">cancel</span>
+                            Reddet
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ===== USERS TAB ===== */}
         {activeTab === "users" && isAdmin && (
           <div className="space-y-4">
