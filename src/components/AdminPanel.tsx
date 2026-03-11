@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
-type AdminTab = "wallpaper" | "daily" | "video" | "notifications" | "users";
+type AdminTab = "wallpaper" | "daily" | "video" | "notifications" | "suggestions" | "users";
 
 interface AdminPanelProps {
   onClose: () => void;
