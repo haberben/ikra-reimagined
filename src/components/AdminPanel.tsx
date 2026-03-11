@@ -463,8 +463,91 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
         {/* ===== WALLPAPER TAB ===== */}
         {activeTab === "wallpaper" && (
           <div className="space-y-4">
+            {/* AI Wallpaper Generator */}
+            <div className="rounded-xl border-2 border-accent/30 bg-gradient-to-b from-accent/5 to-card p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-accent">auto_awesome</span>
+                <h4 className="text-sm font-bold text-accent">AI Wallpaper Üretici</h4>
+              </div>
+              <p className="text-[10px] text-muted-foreground">Ayet veya hadis seçin, AI altın kaligrafi wallpaper üretsin.</p>
+
+              {/* Load content button */}
+              {aiContentList.length === 0 ? (
+                <button
+                  onClick={fetchContentForGenerator}
+                  className="w-full rounded-lg bg-accent/10 border border-accent/20 px-4 py-2 text-sm font-medium text-accent"
+                >
+                  <span className="material-symbols-outlined text-[16px] align-middle mr-1">download</span>
+                  Ayet/Hadis Listesini Yükle
+                </button>
+              ) : (
+                <select
+                  value={aiSelectedContent}
+                  onChange={(e) => handleSelectContent(e.target.value)}
+                  className="w-full rounded-lg border border-accent/20 bg-card px-3 py-2 text-sm text-foreground"
+                >
+                  <option value="">— İçerik seçin —</option>
+                  {aiContentList.map((c: any) => (
+                    <option key={c.id} value={c.id}>
+                      [{c.type === "ayet" ? "Ayet" : "Hadis"}] {c.turkish_text.substring(0, 60)}...
+                    </option>
+                  ))}
+                </select>
+              )}
+
+              <input placeholder="Arapça metin" value={aiArabic} onChange={(e) => setAiArabic(e.target.value)} className="w-full rounded-lg border border-accent/20 bg-card px-3 py-2 text-sm text-foreground font-arabic" dir="rtl" />
+              <input placeholder="Türkçe metin" value={aiTurkish} onChange={(e) => setAiTurkish(e.target.value)} className="w-full rounded-lg border border-accent/20 bg-card px-3 py-2 text-sm text-foreground" />
+              <input placeholder="Kaynak (opsiyonel)" value={aiSource} onChange={(e) => setAiSource(e.target.value)} className="w-full rounded-lg border border-accent/20 bg-card px-3 py-2 text-sm text-foreground" />
+
+              <div className="flex gap-2">
+                <button onClick={() => setAiType("ayet")} className={cn("flex-1 rounded-lg py-2 text-xs font-bold", aiType === "ayet" ? "bg-accent text-accent-foreground" : "bg-secondary text-foreground")}>Ayet</button>
+                <button onClick={() => setAiType("hadis")} className={cn("flex-1 rounded-lg py-2 text-xs font-bold", aiType === "hadis" ? "bg-accent text-accent-foreground" : "bg-secondary text-foreground")}>Hadis</button>
+              </div>
+
+              <select value={aiStyle} onChange={(e) => setAiStyle(e.target.value)} className="w-full rounded-lg border border-accent/20 bg-card px-3 py-2 text-sm text-foreground">
+                <option value="dark elegant">Koyu & Zarif (Siyah/Yeşil)</option>
+                <option value="golden luxury on black">Altın Lüks (Siyah Arka Plan)</option>
+                <option value="midnight blue with gold">Gece Mavisi & Altın</option>
+                <option value="emerald green with gold shimmer">Zümrüt Yeşili & Altın Işıltı</option>
+                <option value="white marble with gold">Beyaz Mermer & Altın</option>
+                <option value="royal purple with gold">Mor & Altın</option>
+              </select>
+
+              <button
+                onClick={handleGenerateWallpaper}
+                disabled={aiGenerating || !aiArabic.trim() || !aiTurkish.trim()}
+                className="w-full rounded-lg bg-accent px-4 py-3 text-sm font-bold text-accent-foreground disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {aiGenerating ? (
+                  <>
+                    <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+                    Üretiliyor... (30-60 sn)
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
+                    Wallpaper Üret
+                  </>
+                )}
+              </button>
+
+              {aiError && (
+                <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-xs text-destructive">
+                  {aiError}
+                </div>
+              )}
+
+              {aiResult && (
+                <div className="space-y-2">
+                  <p className="text-xs font-bold text-accent">✅ Başarıyla üretildi!</p>
+                  <img src={aiResult} alt="Generated wallpaper" className="w-full rounded-lg border border-accent/20" />
+                </div>
+              )}
+            </div>
+
+            {/* Manual upload */}
             <div className="rounded-xl border border-primary/10 bg-card p-4 space-y-3">
-              <h4 className="text-sm font-bold">Yeni Duvar Kağıdı</h4>
+              <h4 className="text-sm font-bold">Manuel Yükleme</h4>
               <input type="file" accept="image/*" onChange={(e) => setWpFile(e.target.files?.[0] || null)} className="w-full text-sm" />
               <input placeholder="Arapça metin (opsiyonel)" value={wpArabic} onChange={(e) => setWpArabic(e.target.value)} className="w-full rounded-lg border border-primary/10 bg-card px-3 py-2 text-sm text-foreground font-arabic" dir="rtl" />
               <input placeholder="Türkçe metin (opsiyonel)" value={wpTurkish} onChange={(e) => setWpTurkish(e.target.value)} className="w-full rounded-lg border border-primary/10 bg-card px-3 py-2 text-sm text-foreground" />
