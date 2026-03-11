@@ -108,9 +108,20 @@ export default function GalleryPage({ onNotifications, onMenuOpen }: GalleryPage
                       )}
                     </div>
                   )}
-                  <button className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/20 backdrop-blur">
-                    <span className="material-symbols-outlined text-white text-[16px]">download</span>
-                  </button>
+                  <div className="absolute right-2 top-2 flex gap-1.5">
+                    <button
+                      onClick={() => toggleFavorite(w.id, "wallpaper")}
+                      className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 backdrop-blur"
+                    >
+                      <span
+                        className={cn("material-symbols-outlined text-[16px]", isFavorite(w.id) ? "text-red-400" : "text-white")}
+                        style={isFavorite(w.id) ? { fontVariationSettings: "'FILL' 1" } : {}}
+                      >favorite</span>
+                    </button>
+                    <button className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 backdrop-blur">
+                      <span className="material-symbols-outlined text-white text-[16px]">download</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
