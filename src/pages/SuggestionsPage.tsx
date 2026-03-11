@@ -274,17 +274,87 @@ export default function SuggestionsPage({ onBack }: SuggestionsPageProps) {
                     rows={2}
                     className="w-full rounded-lg border border-primary/10 bg-card px-3 py-2.5 text-sm text-foreground resize-none"
                   />
+                  {/* Optional cover image */}
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground">Kapak görseli (opsiyonel)</p>
+                    <div className="flex gap-2">
+                      <label className="flex-1 flex items-center justify-center gap-2 rounded-lg border border-dashed border-primary/20 bg-primary/5 px-3 py-3 text-xs font-medium text-primary cursor-pointer hover:bg-primary/10 transition-colors">
+                        <span className="material-symbols-outlined text-[18px]">upload</span>
+                        {coverFile ? coverFile.name.substring(0, 20) + "..." : "Dosya Yükle"}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) {
+                              setCoverFile(f);
+                              setCoverPreview(URL.createObjectURL(f));
+                            }
+                          }}
+                        />
+                      </label>
+                    </div>
+                    {coverPreview && (
+                      <div className="relative">
+                        <img src={coverPreview} alt="Kapak önizleme" className="w-full h-24 object-cover rounded-lg" />
+                        <button
+                          onClick={() => { setCoverFile(null); setCoverPreview(null); }}
+                          className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/50"
+                        >
+                          <span className="material-symbols-outlined text-white text-[14px]">close</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </>
               )}
 
               {category === "wallpaper" && (
                 <>
-                  <input
-                    placeholder="Görsel URL'si *"
-                    value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
-                    className="w-full rounded-lg border border-primary/10 bg-card px-3 py-2.5 text-sm text-foreground"
-                  />
+                  {/* Upload or URL toggle */}
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium">Görsel ekleyin *</p>
+                    <label className="flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-primary/20 bg-primary/5 px-3 py-4 text-sm font-medium text-primary cursor-pointer hover:bg-primary/10 transition-colors">
+                      <span className="material-symbols-outlined text-[22px]">add_photo_alternate</span>
+                      {imageFile ? imageFile.name.substring(0, 30) + "..." : "Görsel Yükle"}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) {
+                            setImageFile(f);
+                            setImagePreview(URL.createObjectURL(f));
+                            setImageUrl("");
+                          }
+                        }}
+                      />
+                    </label>
+                    {imagePreview && (
+                      <div className="relative">
+                        <img src={imagePreview} alt="Önizleme" className="w-full h-48 object-cover rounded-lg" />
+                        <button
+                          onClick={() => { setImageFile(null); setImagePreview(null); }}
+                          className="absolute top-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/50"
+                        >
+                          <span className="material-symbols-outlined text-white text-[16px]">close</span>
+                        </button>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-px bg-primary/10" />
+                      <span className="text-[10px] text-muted-foreground">veya</span>
+                      <div className="flex-1 h-px bg-primary/10" />
+                    </div>
+                    <input
+                      placeholder="Görsel URL'si yapıştırın"
+                      value={imageUrl}
+                      onChange={(e) => { setImageUrl(e.target.value); if (e.target.value) { setImageFile(null); setImagePreview(null); } }}
+                      className="w-full rounded-lg border border-primary/10 bg-card px-3 py-2.5 text-sm text-foreground"
+                    />
+                  </div>
                   <textarea
                     placeholder="Açıklama (opsiyonel — hangi ayet/hadis vs.)"
                     value={description}
