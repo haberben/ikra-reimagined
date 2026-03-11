@@ -164,8 +164,14 @@ export default function GalleryPage({ onNotifications, onMenuOpen }: GalleryPage
                         style={isFavorite(w.id) ? { fontVariationSettings: "'FILL' 1" } : {}}
                       >favorite</span>
                     </button>
-                    <button className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 backdrop-blur">
-                      <span className="material-symbols-outlined text-white text-[16px]">download</span>
+                    <button
+                      onClick={() => downloadWallpaper(w.image_url, w.id)}
+                      disabled={downloading === w.id}
+                      className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 backdrop-blur"
+                    >
+                      <span className={cn("material-symbols-outlined text-white text-[16px]", downloading === w.id && "animate-spin")}>
+                        {downloading === w.id ? "progress_activity" : "download"}
+                      </span>
                     </button>
                   </div>
                   {/* Contributor credit */}
