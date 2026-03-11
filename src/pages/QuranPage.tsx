@@ -173,8 +173,12 @@ export default function QuranPage({ onMenuOpen, onNotifications }: QuranPageProp
                         </div>
                       )}
                     </div>
-                    <span className="w-20 text-center text-[10px] font-medium leading-tight">{turkishName}</span>
-                    <span className="w-20 truncate text-center text-[8px] text-muted-foreground font-arabic">{r.name}</span>
+                    <span className="w-20 text-center text-[10px] font-medium leading-tight">
+                      {turkishName || r.name}
+                    </span>
+                    {turkishName && (
+                      <span className="w-20 truncate text-center text-[8px] text-muted-foreground font-arabic" dir="rtl">{r.name}</span>
+                    )}
                   </button>
                 );
               })}
