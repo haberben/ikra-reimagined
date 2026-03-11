@@ -393,6 +393,72 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
     fetchNotifications();
   };
 
+  // ============ SUGGESTIONS ============
+  const fetchSuggestions = async () => {
+    setSuggestionsLoading(true);
+    const { data } = await supabase
+      .from("suggestions")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (data) setSuggestions(data);
+    setSuggestionsLoading(false);
+  };
+
+  const approveSuggestion = async (s: any) => {
+    try {
+      // Create the content based on category
+      if (s.category === "ayet" || s.category === "hadis") {
+        await supabase.from("daily_content").insert({
+          type: s.category,
+          arabic_text: s.arabic_text || "",
+          turkish_text: s.turkish_text || "",
+          source: s.source || null,
+          created_by_user_id: currentUserId,
+          contributor_name: s.user_display_name,
+        } as any);
+      } else if (s.category === "wallpaper" && s.image_url) {
+        await supabase.from("wallpapers").insert({
+          image_url: s.image_url,
+          category: "Günün Ayeti",
+          created_by_user_id: currentUserId,
+          contributor_name: s.user_display_name,
+        } as any);
+      } else if (s.category === "playlist" && s.youtube_url) {
+        const playlistId = extractPlaylistId(s.youtube_url);
+        if (playlistId) {
+          await supabase.from("video_playlists").insert({
+            title: s.title || "Önerilen Playlist",
+            youtube_playlist_url: s.youtube_url,
+            youtube_playlist_id: playlistId,
+            is_published: true,
+            sort_order: playlists.length,
+            created_by_user_id: currentUserId,
+            contributor_name: s.user_display_name,
+          } as any);
+        }
+      }
+      // Update suggestion status
+      await supabase.from("suggestions").update({
+        status: "approved",
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: currentUserId,
+      } as any).eq("id", s.id);
+      fetchSuggestions();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const rejectSuggestion = async (id: string, note?: string) => {
+    await supabase.from("suggestions").update({
+      status: "rejected",
+      admin_note: note || null,
+      reviewed_at: new Date().toISOString(),
+      reviewed_by: currentUserId,
+    } as any).eq("id", id);
+    fetchSuggestions();
+  };
+
   // Helper: can user delete/edit this item?
   const canModify = (item: any) => {
     if (isAdmin) return true;
