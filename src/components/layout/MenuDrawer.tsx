@@ -21,7 +21,7 @@ const MENU_ITEMS = [
   { icon: "explore", label: "Kıble Bulucu", target: "times" },
 ];
 
-export default function MenuDrawer({ open, onClose, onNavigate, city, userName }: MenuDrawerProps) {
+export default function MenuDrawer({ open, onClose, onNavigate, city, userName, dark, onToggleDark }: MenuDrawerProps) {
   if (!open) return null;
 
   return (
