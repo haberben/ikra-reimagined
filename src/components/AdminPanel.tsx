@@ -72,6 +72,10 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
   const [syncingPlaylistId, setSyncingPlaylistId] = useState<string | null>(null);
   const [syncResult, setSyncResult] = useState<Record<string, string>>({});
 
+  // Suggestions state
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+
   // Notification state
   const [notifTitle, setNotifTitle] = useState("");
   const [notifBody, setNotifBody] = useState("");
