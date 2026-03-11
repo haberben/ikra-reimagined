@@ -10,7 +10,7 @@ const TABS: Tab[] = [
   { id: "home", label: "Ana Sayfa", icon: "home" },
   { id: "times", label: "Vakitler", icon: "schedule" },
   { id: "quran", label: "Kur'an", icon: "menu_book" },
-  { id: "favorites", label: "Favoriler", icon: "favorite" },
+  { id: "hatim", label: "Hatim", icon: "group" },
   { id: "gallery", label: "Galeri", icon: "photo_library" },
 ];
 

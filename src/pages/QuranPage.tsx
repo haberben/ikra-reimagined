@@ -218,7 +218,7 @@ export default function QuranPage({ onMenuOpen, onNotifications }: QuranPageProp
         <div className="fixed bottom-16 left-0 right-0 z-40 border-t border-primary/10 bg-card/95 backdrop-blur-md px-4 py-2">
           <div className="flex items-center gap-3">
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold truncate">{selectedReciter ? getReciterTurkishName(selectedReciter) : "Hafız"}</p>
+              <p className="text-xs font-bold truncate">{selectedReciter ? getDisplayName(selectedReciter) : "Hafız"}</p>
               <p className="text-[10px] text-muted-foreground">{playingJuz}. Cüz</p>
             </div>
             <div className="flex-1 h-1 rounded-full bg-primary/10 overflow-hidden">
