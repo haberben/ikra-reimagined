@@ -1,0 +1,17 @@
+{
+  "appId": "com.ikra.app",
+  "appName": "İKRA",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    },
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_icon_config_sample",
+      "iconColor": "#1a8a4a"
+    }
+  }
+}
