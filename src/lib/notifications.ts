@@ -1,4 +1,5 @@
 // Push notification utilities for İKRA app
+import { supabase } from "@/integrations/supabase/client";
 
 const VAPID_PUBLIC_KEY = ''; // Will be set when push service is configured
 
@@ -33,7 +34,6 @@ export async function scheduleLocalNotification(
         payload: { title, body, tag: tag || 'ikra-local', icon: '/icons/icon-192.png' },
       });
     } else {
-      // Fallback to Notification API directly
       new Notification(title, {
         body,
         icon: '/icons/icon-192.png',
@@ -49,12 +49,43 @@ export function cancelScheduledNotification(timerId: number) {
   window.clearTimeout(timerId);
 }
 
+// Fetch a random ayet or hadis from daily_content
+async function fetchRandomContent(): Promise<{ turkish_text: string; source: string | null; type: string } | null> {
+  try {
+    // Try today's content first
+    const today = new Date().toISOString().split('T')[0];
+    const { data: todayData } = await supabase
+      .from('daily_content')
+      .select('turkish_text, source, type')
+      .eq('date', today)
+      .limit(2);
+
+    if (todayData && todayData.length > 0) {
+      // Pick random from today's content
+      return todayData[Math.floor(Math.random() * todayData.length)];
+    }
+
+    // Fallback: get any random content
+    const { data: allData, count } = await supabase
+      .from('daily_content')
+      .select('turkish_text, source, type', { count: 'exact' });
+
+    if (allData && allData.length > 0) {
+      return allData[Math.floor(Math.random() * allData.length)];
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 // Schedule prayer notifications based on user preferences
-export function schedulePrayerNotifications(
+export async function schedulePrayerNotifications(
   times: Record<string, string>,
   toggles: Record<string, boolean>,
   offsets: Record<string, string>
-): number[] {
+): Promise<number[]> {
   const timerIds: number[] = [];
   const now = new Date();
   const nowMs = now.getTime();
@@ -67,8 +98,11 @@ export function schedulePrayerNotifications(
     Isha: 'Yatsı',
   };
 
-  Object.entries(toggles).forEach(([key, enabled]) => {
-    if (!enabled || !times[key]) return;
+  // Pre-fetch content for notifications
+  const content = await fetchRandomContent();
+
+  for (const [key, enabled] of Object.entries(toggles)) {
+    if (!enabled || !times[key]) continue;
 
     const [h, m] = times[key].split(':').map(Number);
     const prayerDate = new Date(now);
@@ -87,18 +121,26 @@ export function schedulePrayerNotifications(
 
     if (delay > 0) {
       const name = PRAYER_NAMES[key] || key;
-      const bodyText = offsetMinutes > 0
+      let bodyText = offsetMinutes > 0
         ? `${name} namazına ${offsetMinutes} dakika kaldı`
         : `${name} namazı vakti girdi`;
 
-      scheduleLocalNotification(
+      // Append ayet/hadis content
+      if (content) {
+        const label = content.type === 'ayet' ? '📖 Ayet' : '📿 Hadis';
+        bodyText += `\n\n${label}: "${content.turkish_text}"`;
+        if (content.source) bodyText += ` — ${content.source}`;
+      }
+
+      const id = await scheduleLocalNotification(
         `🕌 ${name} Vakti`,
         bodyText,
         delay,
         `prayer-${key}`
-      ).then(id => { if (id !== null) timerIds.push(id); });
+      );
+      if (id !== null) timerIds.push(id);
     }
-  });
+  }
 
   return timerIds;
 }
