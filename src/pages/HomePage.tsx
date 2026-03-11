@@ -119,14 +119,14 @@ export default function HomePage({ city, onNavigate, onNotifications, onZikirmat
         <div className="rounded-xl border border-primary/10 bg-card p-4 shadow-sm">
           <div className="rounded-lg bg-primary/5 p-4">
             <p className="font-arabic text-2xl leading-loose text-foreground" dir="rtl">
-              إِنَّ مَعَ الْعُسْرِ يُسْرًا
+              {ayet?.arabic_text || "إِنَّ مَعَ الْعُسْرِ يُسْرًا"}
             </p>
           </div>
           <p className="mt-3 text-sm italic text-muted-foreground">
-            "Şüphesiz zorlukla beraber kolaylık vardır."
+            "{ayet?.turkish_text || "Şüphesiz zorlukla beraber kolaylık vardır."}"
           </p>
           <div className="mt-3 flex items-center justify-between">
-            <span className="text-xs text-primary/60">İnşirah Suresi, 6</span>
+            <span className="text-xs text-primary/60">{ayet?.source || "İnşirah Suresi, 6"}</span>
             <div className="flex gap-2">
               <button className="p-1 text-muted-foreground hover:text-primary">
                 <span className="material-symbols-outlined text-[20px]">share</span>
@@ -138,6 +138,26 @@ export default function HomePage({ city, onNavigate, onNotifications, onZikirmat
           </div>
         </div>
       </div>
+
+      {/* Günün Hadisi */}
+      {hadis && (
+        <div className="mt-4 px-4">
+          <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-accent">Günün Hadisi</h3>
+          <div className="rounded-xl border border-accent/20 bg-card p-4 shadow-sm">
+            <div className="rounded-lg bg-accent/5 p-4">
+              <p className="font-arabic text-xl leading-loose text-foreground" dir="rtl">
+                {hadis.arabic_text}
+              </p>
+            </div>
+            <p className="mt-3 text-sm italic text-muted-foreground">
+              "{hadis.turkish_text}"
+            </p>
+            {hadis.source && (
+              <p className="mt-2 text-xs text-accent/60">{hadis.source}</p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Keşfet Grid */}
       <div className="mt-6 px-4">
