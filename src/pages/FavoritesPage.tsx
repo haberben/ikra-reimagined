@@ -48,32 +48,19 @@ export default function FavoritesPage({ onNotifications, onMenuOpen }: Favorites
 
     const itemMap: Record<string, any> = {};
 
-    const promises: Promise<void>[] = [];
-
     if (wallpaperIds.length > 0) {
-      promises.push(
-        supabase.from("wallpapers").select("*").in("id", wallpaperIds).then(({ data }) => {
-          data?.forEach(d => { itemMap[d.id] = { ...d, _type: "wallpaper" }; });
-        })
-      );
+      const { data } = await supabase.from("wallpapers").select("*").in("id", wallpaperIds);
+      data?.forEach(d => { itemMap[d.id] = { ...d, _type: "wallpaper" }; });
     }
     if (ayetIds.length > 0 || hadisIds.length > 0) {
       const dcIds = [...ayetIds, ...hadisIds];
-      promises.push(
-        supabase.from("daily_content").select("*").in("id", dcIds).then(({ data }) => {
-          data?.forEach(d => { itemMap[d.id] = { ...d, _type: d.type }; });
-        })
-      );
+      const { data } = await supabase.from("daily_content").select("*").in("id", dcIds);
+      data?.forEach(d => { itemMap[d.id] = { ...d, _type: d.type }; });
     }
     if (videoIds.length > 0) {
-      promises.push(
-        supabase.from("video_playlists").select("*").in("id", videoIds).then(({ data }) => {
-          data?.forEach(d => { itemMap[d.id] = { ...d, _type: "video" }; });
-        })
-      );
+      const { data } = await supabase.from("video_playlists").select("*").in("id", videoIds);
+      data?.forEach(d => { itemMap[d.id] = { ...d, _type: "video" }; });
     }
-
-    await Promise.all(promises);
     setItems(itemMap);
     setLoading(false);
   };
