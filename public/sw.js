@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ikra-v4';
+const CACHE_NAME = 'ikra-v5';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -34,7 +34,7 @@ self.addEventListener('activate', (e) => {
   self.clients.claim();
 });
 
-// Fetch: network-first for APIs, cache-first for static assets
+// Fetch: network-first for APIs and dev deps, cache-first for static assets
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
 
@@ -42,6 +42,11 @@ self.addEventListener('fetch', (e) => {
 
   // Skip OAuth routes
   if (url.pathname.startsWith('/~oauth')) return;
+
+  // NEVER cache Vite dep pre-bundles - always fetch from network
+  if (url.pathname.includes('/node_modules/') || url.pathname.includes('.vite/')) {
+    return;
+  }
 
   // Network-first for API calls
   const isApi = API_DOMAINS.some((d) => url.hostname.includes(d));
@@ -111,7 +116,6 @@ self.addEventListener('notificationclick', (e) => {
 
   e.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
-      // Focus existing window or open new
       for (const client of clients) {
         if (client.url.includes(self.location.origin) && 'focus' in client) {
           return client.focus();
@@ -134,7 +138,7 @@ self.addEventListener('sync', (e) => {
 
 async function syncPrayerTimes() {
   try {
-    const city = 'İstanbul'; // Default fallback
+    const city = 'İstanbul';
     const res = await fetch(
       `https://api.aladhan.com/v1/timingsByCity?city=${encodeURIComponent(city)}&country=TR&method=13`
     );
@@ -152,7 +156,6 @@ async function syncPrayerTimes() {
 }
 
 async function syncFavorites() {
-  // Placeholder for syncing offline favorites
   console.log('Syncing favorites in background...');
 }
 
