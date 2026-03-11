@@ -1,6 +1,24 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+
+// Load YouTube IFrame API once
+let ytApiLoaded = false;
+let ytApiPromise: Promise<void> | null = null;
+function loadYTApi(): Promise<void> {
+  if (ytApiLoaded) return Promise.resolve();
+  if (ytApiPromise) return ytApiPromise;
+  ytApiPromise = new Promise((resolve) => {
+    const tag = document.createElement("script");
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(tag);
+    (window as any).onYouTubeIframeAPIReady = () => {
+      ytApiLoaded = true;
+      resolve();
+    };
+  });
+  return ytApiPromise;
+}
 
 interface VideoPlaylist {
   id: string;
