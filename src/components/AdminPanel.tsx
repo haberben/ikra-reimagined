@@ -137,6 +137,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
     fetchDailyContent();
     fetchPlaylists();
     fetchNotifications();
+    fetchSuggestions();
     fetchUsers();
   };
 
