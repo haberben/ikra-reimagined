@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ikra-v3';
+const CACHE_NAME = 'ikra-v4';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
