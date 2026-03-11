@@ -15,6 +15,7 @@ import FavoritesPage from "@/pages/FavoritesPage";
 import HatimPage from "@/pages/HatimPage";
 import NotificationsPage from "@/pages/NotificationsPage";
 import ZikirmatikPage from "@/pages/ZikirmatikPage";
+import SuggestionsPage from "@/pages/SuggestionsPage";
 import AdminPanel from "@/components/AdminPanel";
 import { cn } from "@/lib/utils";
 
