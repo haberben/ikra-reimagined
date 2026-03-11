@@ -5,7 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import BottomNav from "@/components/layout/BottomNav";
 import InstallPrompt from "@/components/InstallPrompt";
 import MenuDrawer from "@/components/layout/MenuDrawer";
-import { useTheme } from "@/hooks/useTheme";
+
 import Onboarding from "@/pages/Onboarding";
 import HomePage from "@/pages/HomePage";
 import PrayerTimesPage from "@/pages/PrayerTimesPage";
@@ -29,7 +29,7 @@ const App = () => {
   const [showAdmin, setShowAdmin] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [pageTransition, setPageTransition] = useState(false);
-  const { dark, toggle: toggleDark } = useTheme();
+  
 
   const handleMenuOpen = () => setShowMenu(true);
 
@@ -142,8 +142,6 @@ const App = () => {
           onNavigate={handleMenuNavigate}
           city={city}
           userName={localStorage.getItem("ikra_name") || ""}
-          dark={dark}
-          onToggleDark={toggleDark}
         />
       </TooltipProvider>
     </QueryClientProvider>
