@@ -24,6 +24,7 @@ export default function GalleryPage({ onNotifications, onMenuOpen }: GalleryPage
   const [search, setSearch] = useState("");
   const [wallpapers, setWallpapers] = useState<WallpaperItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const { toggleFavorite, isFavorite } = useFavorites();
 
   useEffect(() => {
     fetchWallpapers();
