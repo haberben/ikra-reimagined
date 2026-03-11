@@ -94,8 +94,6 @@ export default function GalleryPage({ onNotifications, onMenuOpen }: GalleryPage
               <div key={w.id} className="flex flex-col gap-2">
                 <div className="relative aspect-[9/16] overflow-hidden rounded-xl bg-gradient-to-b from-primary/20 to-primary/40">
                   <img src={w.image_url} alt={w.turkish_text || w.category} className="absolute inset-0 h-full w-full object-cover" />
-                    </div>
-                  )}
                   <div className="absolute right-2 top-2 flex gap-1.5">
                     <button
                       onClick={() => toggleFavorite(w.id, "wallpaper")}
