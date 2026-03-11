@@ -28,7 +28,7 @@ export default function SuggestionsPage({ onBack }: SuggestionsPageProps) {
   const [authError, setAuthError] = useState("");
 
   const [category, setCategory] = useState<Category>("ayet");
-  const [displayName, setDisplayName] = useState(() => localStorage.getItem("ikra_name") || "");
+  const [displayName, setDisplayName] = useState("");
   const [arabicText, setArabicText] = useState("");
   const [turkishText, setTurkishText] = useState("");
   const [source, setSource] = useState("");
@@ -153,7 +153,7 @@ export default function SuggestionsPage({ onBack }: SuggestionsPageProps) {
   const statusLabel = (s: string) => {
     if (s === "pending") return { text: "Bekliyor", color: "bg-yellow-500/10 text-yellow-600" };
     if (s === "approved") return { text: "Onaylandı ✅", color: "bg-primary/10 text-primary" };
-    return { text: "Reddedildi", color: "bg-destructive/10 text-destructive" };
+    return { text: "İncelendi", color: "bg-muted text-muted-foreground" };
   };
 
   if (loading) {
@@ -223,11 +223,12 @@ export default function SuggestionsPage({ onBack }: SuggestionsPageProps) {
               </h4>
 
               <input
-                placeholder="Adınız Soyadınız *"
+                placeholder="Öneri için görünecek adınız *"
                 value={displayName}
-                onChange={(e) => { setDisplayName(e.target.value); localStorage.setItem("ikra_name", e.target.value); }}
+                onChange={(e) => setDisplayName(e.target.value)}
                 className="w-full rounded-lg border border-primary/10 bg-card px-3 py-2.5 text-sm text-foreground"
               />
+              <p className="text-[10px] text-muted-foreground -mt-2">Bu ad sadece önerinizde görünür, profil adınızı değiştirmez.</p>
 
               {(category === "ayet" || category === "hadis") && (
                 <>

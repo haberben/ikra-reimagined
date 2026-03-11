@@ -451,9 +451,10 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
   };
 
   const rejectSuggestion = async (id: string, note?: string) => {
+    const defaultNote = "Değerli katkınız için çok teşekkür ederiz 🤲 Önerinizi inceledik ancak şu an için yayınlayamıyoruz. Lütfen yeni önerilerinizi paylaşmaya devam edin, desteğiniz bizim için çok kıymetli! 💛";
     await supabase.from("suggestions").update({
       status: "rejected",
-      admin_note: note || null,
+      admin_note: note || defaultNote,
       reviewed_at: new Date().toISOString(),
       reviewed_by: currentUserId,
     } as any).eq("id", id);
