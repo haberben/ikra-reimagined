@@ -199,7 +199,7 @@ function VideoPlayer({
   );
 }
 
-
+export default function VideoSection() {
   const [playlists, setPlaylists] = useState<VideoPlaylist[]>([]);
   const [loading, setLoading] = useState(true);
   const [activePlaylist, setActivePlaylist] = useState<VideoPlaylist | null>(null);
