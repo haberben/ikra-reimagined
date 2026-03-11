@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useFavorites } from "@/hooks/useFavorites";
 import StickyHeader from "@/components/layout/StickyHeader";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 const CATEGORIES = ["Tümü", "Günün Ayeti", "Hadis-i Şerifler", "Hat Sanatı", "Manzara"];
 
@@ -25,7 +26,65 @@ export default function GalleryPage({ onNotifications, onMenuOpen }: GalleryPage
   const [search, setSearch] = useState("");
   const [wallpapers, setWallpapers] = useState<WallpaperItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState<string | null>(null);
   const { toggleFavorite, isFavorite } = useFavorites();
+
+  const downloadWallpaper = useCallback(async (imageUrl: string, id: string) => {
+    if (downloading) return;
+    setDownloading(id);
+    try {
+      const response = await fetch(imageUrl);
+      if (!response.ok) throw new Error("Görsel indirilemedi");
+      const blob = await response.blob();
+      const fileName = `ikra-wallpaper-${id.slice(0, 8)}.jpg`;
+
+      // Check if running in Capacitor (native app)
+      const isNative = !!(window as any).Capacitor?.isNativePlatform?.();
+
+      if (isNative) {
+        // Convert blob to base64 for native file system
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          try {
+            const base64Data = (reader.result as string).split(",")[1];
+            const { Filesystem, Directory } = await import("@capacitor/filesystem");
+            await Filesystem.writeFile({
+              path: fileName,
+              data: base64Data,
+              directory: Directory.Documents,
+            });
+            toast.success("Görsel kaydedildi!", { description: "Belgeler klasörüne kaydedildi" });
+          } catch (e) {
+            // Fallback: open image in new tab for manual save
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = fileName;
+            a.click();
+            URL.revokeObjectURL(url);
+            toast.success("Görsel indiriliyor");
+          }
+        };
+        reader.readAsDataURL(blob);
+      } else {
+        // Web: standard download
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        toast.success("Görsel indiriliyor");
+      }
+    } catch (err) {
+      console.error("Download error:", err);
+      toast.error("İndirme başarısız oldu");
+    } finally {
+      setDownloading(null);
+    }
+  }, [downloading]);
 
   useEffect(() => {
     fetchWallpapers();
@@ -105,8 +164,14 @@ export default function GalleryPage({ onNotifications, onMenuOpen }: GalleryPage
                         style={isFavorite(w.id) ? { fontVariationSettings: "'FILL' 1" } : {}}
                       >favorite</span>
                     </button>
-                    <button className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 backdrop-blur">
-                      <span className="material-symbols-outlined text-white text-[16px]">download</span>
+                    <button
+                      onClick={() => downloadWallpaper(w.image_url, w.id)}
+                      disabled={downloading === w.id}
+                      className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 backdrop-blur"
+                    >
+                      <span className={cn("material-symbols-outlined text-white text-[16px]", downloading === w.id && "animate-spin")}>
+                        {downloading === w.id ? "progress_activity" : "download"}
+                      </span>
                     </button>
                   </div>
                   {/* Contributor credit */}
