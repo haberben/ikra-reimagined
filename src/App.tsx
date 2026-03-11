@@ -62,6 +62,16 @@ const App = () => {
     setTimeout(() => setShowZikirmatik(false), 300);
   };
 
+  const handleSuggestions = () => {
+    setPageTransition(true);
+    setTimeout(() => setShowSuggestions(true), 50);
+  };
+
+  const handleSuggestionsBack = () => {
+    setPageTransition(false);
+    setTimeout(() => setShowSuggestions(false), 300);
+  };
+
   const handleMenuNavigate = (target: string) => {
     setShowMenu(false);
     if (target === "notifications") handleNotifications();
