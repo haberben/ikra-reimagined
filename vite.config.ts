@@ -22,7 +22,7 @@ export default defineConfig(({ mode }) => ({
     dedupe: ["react", "react-dom"],
   },
   optimizeDeps: {
-    include: ["react", "react-dom", "sonner", "@radix-ui/react-tooltip"],
+    include: ["react", "react-dom", "sonner"],
     force: true,
   },
 }));
