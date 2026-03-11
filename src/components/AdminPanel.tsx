@@ -347,6 +347,24 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
     fetchPlaylists();
   };
 
+  const syncPlaylistVideos = async (playlistId: string, youtubePlaylistId: string) => {
+    setSyncingPlaylistId(playlistId);
+    setSyncResult(prev => ({ ...prev, [playlistId]: "" }));
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await supabase.functions.invoke("fetch-playlist-videos", {
+        body: { playlistId, youtubePlaylistId },
+      });
+      if (res.error) throw res.error;
+      const result = res.data as any;
+      if (result.error) throw new Error(result.error);
+      setSyncResult(prev => ({ ...prev, [playlistId]: `✅ ${result.count} video senkronlandı` }));
+    } catch (err: any) {
+      setSyncResult(prev => ({ ...prev, [playlistId]: `❌ ${err.message}` }));
+    }
+    setSyncingPlaylistId(null);
+  };
+
   // ============ NOTIFICATIONS ============
   const fetchNotifications = async () => {
     const { data } = await supabase.from("notifications").select("*").order("created_at", { ascending: false }).limit(50);
