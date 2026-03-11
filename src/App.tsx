@@ -24,6 +24,7 @@ const App = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showZikirmatik, setShowZikirmatik] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const { dark, toggle: toggleDark } = useTheme();
 
   const handleMenuOpen = () => setShowMenu(true);
   const handleNotifications = () => setShowNotifications(true);
