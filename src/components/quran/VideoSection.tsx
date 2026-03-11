@@ -264,15 +264,8 @@ export default function VideoSection() {
               {/* Active video player */}
               {activeVideoId && (
                 <div className="rounded-xl overflow-hidden border border-primary/10 shadow-sm mb-4">
-                  <div className="aspect-video">
-                    <iframe
-                      key={activeVideoId}
-                      src={`https://www.youtube.com/embed/${activeVideoId}?rel=0`}
-                      className="h-full w-full"
-                      allow="autoplay; encrypted-media; picture-in-picture"
-                      allowFullScreen
-                      title={videos.find(v => v.youtube_video_id === activeVideoId)?.title || ""}
-                    />
+                  <div className="aspect-video bg-black">
+                    <div ref={playerContainerRef} className="h-full w-full" />
                   </div>
                   <div className="p-3 bg-card flex items-center justify-between">
                     <div className="flex-1 min-w-0">
