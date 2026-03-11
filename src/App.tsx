@@ -76,6 +76,7 @@ const App = () => {
     setShowMenu(false);
     if (target === "notifications") handleNotifications();
     else if (target === "zikirmatik") handleZikirmatik();
+    else if (target === "suggestions") handleSuggestions();
     else if (target === "admin") setShowAdmin(true);
     else setActiveTab(target);
   };
