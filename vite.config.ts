@@ -21,6 +21,6 @@ export default defineConfig(({ mode }) => ({
   },
   optimizeDeps: {
     include: ["react", "react-dom"],
-    force: true,
+    exclude: ["@capacitor/core", "@capacitor/app", "@capacitor/android", "@capacitor/cli", "@capacitor/local-notifications"],
   },
 }));
