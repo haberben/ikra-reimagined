@@ -2,13 +2,12 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
-type AdminTab = "wallpaper" | "daily" | "video" | "notifications";
+type AdminTab = "wallpaper" | "daily" | "video" | "notifications" | "users";
 
 interface AdminPanelProps {
   onClose: () => void;
 }
 
-// Video helper
 function extractPlaylistId(url: string): string | null {
   try {
     const u = new URL(url);
@@ -24,6 +23,8 @@ const WALLPAPER_CATEGORIES = ["Günün Ayeti", "Hadis-i Şerifler", "Hat Sanatı
 export default function AdminPanel({ onClose }: AdminPanelProps) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isModerator, setIsModerator] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -65,6 +66,10 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
   const [notifSaving, setNotifSaving] = useState(false);
   const [sentNotifs, setSentNotifs] = useState<any[]>([]);
 
+  // Users state
+  const [users, setUsers] = useState<any[]>([]);
+  const [userRoles, setUserRoles] = useState<any[]>([]);
+
   useEffect(() => {
     checkAuth();
   }, []);
@@ -74,15 +79,17 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
     const { data: { session } } = await supabase.auth.getSession();
     if (session) {
       setIsLoggedIn(true);
-      // Check admin role
+      setCurrentUserId(session.user.id);
       await supabase.rpc("assign_admin_if_eligible");
       const { data: roles } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", session.user.id);
       const hasAdmin = roles?.some((r: any) => r.role === "admin");
+      const hasMod = roles?.some((r: any) => r.role === "moderator");
       setIsAdmin(!!hasAdmin);
-      if (hasAdmin) loadAllData();
+      setIsModerator(!!hasMod);
+      if (hasAdmin || hasMod) loadAllData();
     }
     setLoading(false);
   };
@@ -103,6 +110,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
     await supabase.auth.signOut();
     setIsLoggedIn(false);
     setIsAdmin(false);
+    setIsModerator(false);
     onClose();
   };
 
@@ -111,11 +119,40 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
     fetchDailyContent();
     fetchPlaylists();
     fetchNotifications();
+    fetchUsers();
+  };
+
+  // ============ USERS ============
+  const fetchUsers = async () => {
+    const { data: profiles } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
+    if (profiles) setUsers(profiles);
+    const { data: roles } = await supabase.from("user_roles").select("*");
+    if (roles) setUserRoles(roles);
+  };
+
+  const getUserRole = (userId: string) => {
+    const role = userRoles.find((r: any) => r.user_id === userId);
+    return role?.role || "user";
+  };
+
+  const grantRole = async (userId: string, role: string) => {
+    await supabase.from("user_roles").insert({ user_id: userId, role } as any);
+    fetchUsers();
+  };
+
+  const revokeRole = async (userId: string) => {
+    await supabase.from("user_roles").delete().eq("user_id", userId).neq("role", "admin");
+    fetchUsers();
+  };
+
+  const toggleBan = async (userId: string, currentBan: boolean) => {
+    await supabase.from("profiles").update({ is_banned: !currentBan } as any).eq("user_id", userId);
+    fetchUsers();
   };
 
   // ============ WALLPAPERS ============
   const fetchWallpapers = async () => {
-    const { data } = await supabase.from("wallpapers").select("*").order("uploaded_at", { ascending: false });
+    const { data } = await supabase.from("wallpapers").select("*").order("sort_order").order("uploaded_at", { ascending: false });
     if (data) setWallpapers(data);
   };
 
@@ -132,7 +169,9 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
         turkish_text: wpTurkish.trim() || null,
         category: wpCategory,
         image_url: urlData.publicUrl,
-      });
+        sort_order: wallpapers.length,
+        created_by_user_id: currentUserId,
+      } as any);
       setWpArabic(""); setWpTurkish(""); setWpFile(null);
       fetchWallpapers();
     }
@@ -141,6 +180,18 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
 
   const deleteWallpaper = async (id: string) => {
     await supabase.from("wallpapers").delete().eq("id", id);
+    fetchWallpapers();
+  };
+
+  const moveWallpaper = async (index: number, direction: "up" | "down") => {
+    const swapIndex = direction === "up" ? index - 1 : index + 1;
+    if (swapIndex < 0 || swapIndex >= wallpapers.length) return;
+    const a = wallpapers[index];
+    const b = wallpapers[swapIndex];
+    await Promise.all([
+      supabase.from("wallpapers").update({ sort_order: swapIndex } as any).eq("id", a.id),
+      supabase.from("wallpapers").update({ sort_order: index } as any).eq("id", b.id),
+    ]);
     fetchWallpapers();
   };
 
@@ -155,8 +206,8 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
     setDcSaving(true);
     await supabase.from("daily_content").insert({
       type: dcType, arabic_text: dcArabic.trim(), turkish_text: dcTurkish.trim(),
-      source: dcSource.trim() || null, date: dcDate,
-    });
+      source: dcSource.trim() || null, date: dcDate, created_by_user_id: currentUserId,
+    } as any);
     setDcArabic(""); setDcTurkish(""); setDcSource("");
     fetchDailyContent();
     setDcSaving(false);
@@ -198,7 +249,8 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
         title: vidTitle.trim(), description: vidDesc.trim() || null,
         youtube_playlist_url: vidUrl.trim(), youtube_playlist_id: playlistId,
         cover_image_url: coverUrl, is_published: true, sort_order: playlists.length,
-      });
+        created_by_user_id: currentUserId,
+      } as any);
     }
     setVidTitle(""); setVidUrl(""); setVidDesc(""); setVidCover(null); setVidEditId(null);
     fetchPlaylists();
@@ -215,6 +267,18 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
     fetchPlaylists();
   };
 
+  const moveVideo = async (index: number, direction: "up" | "down") => {
+    const swapIndex = direction === "up" ? index - 1 : index + 1;
+    if (swapIndex < 0 || swapIndex >= playlists.length) return;
+    const a = playlists[index];
+    const b = playlists[swapIndex];
+    await Promise.all([
+      supabase.from("video_playlists").update({ sort_order: swapIndex }).eq("id", a.id),
+      supabase.from("video_playlists").update({ sort_order: index }).eq("id", b.id),
+    ]);
+    fetchPlaylists();
+  };
+
   // ============ NOTIFICATIONS ============
   const fetchNotifications = async () => {
     const { data } = await supabase.from("notifications").select("*").order("created_at", { ascending: false }).limit(50);
@@ -227,7 +291,8 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
     await supabase.from("notifications").insert({
       title: notifTitle.trim(), body: notifBody.trim(),
       image_url: notifImage.trim() || null, video_url: notifVideo.trim() || null,
-    });
+      created_by_user_id: currentUserId,
+    } as any);
     setNotifTitle(""); setNotifBody(""); setNotifImage(""); setNotifVideo("");
     fetchNotifications();
     setNotifSaving(false);
@@ -236,6 +301,13 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
   const deleteNotification = async (id: string) => {
     await supabase.from("notifications").delete().eq("id", id);
     fetchNotifications();
+  };
+
+  // Helper: can user delete/edit this item?
+  const canModify = (item: any) => {
+    if (isAdmin) return true;
+    if (isModerator && item.created_by_user_id === currentUserId) return true;
+    return false;
   };
 
   // ============ RENDER ============
@@ -247,8 +319,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
     );
   }
 
-  // Auth screen
-  if (!isLoggedIn || !isAdmin) {
+  if (!isLoggedIn || (!isAdmin && !isModerator)) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-background p-4">
         <div className="w-full max-w-sm">
@@ -258,22 +329,14 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
               <span className="material-symbols-outlined text-muted-foreground">close</span>
             </button>
           </div>
-          {isLoggedIn && !isAdmin && (
+          {isLoggedIn && !isAdmin && !isModerator && (
             <div className="mb-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
-              Bu hesap admin yetkisine sahip değil.
+              Bu hesap yetkilendirilmemiş. Admin ile iletişime geçin.
             </div>
           )}
           <div className="space-y-3">
-            <input
-              type="email" placeholder="E-posta" value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-xl border border-primary/10 bg-card px-4 py-3 text-sm text-foreground"
-            />
-            <input
-              type="password" placeholder="Şifre" value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-xl border border-primary/10 bg-card px-4 py-3 text-sm text-foreground"
-            />
+            <input type="email" placeholder="E-posta" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-xl border border-primary/10 bg-card px-4 py-3 text-sm text-foreground" />
+            <input type="password" placeholder="Şifre" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full rounded-xl border border-primary/10 bg-card px-4 py-3 text-sm text-foreground" />
             {authError && <p className="text-xs text-destructive">{authError}</p>}
             <button onClick={handleAuth} className="w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground">
               {authMode === "login" ? "Giriş Yap" : "Kayıt Ol"}
@@ -287,19 +350,25 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
     );
   }
 
-  const TABS: { key: AdminTab; label: string; icon: string }[] = [
+  const TABS: { key: AdminTab; label: string; icon: string; adminOnly?: boolean }[] = [
     { key: "wallpaper", label: "Duvar Kağıdı", icon: "wallpaper" },
     { key: "daily", label: "Ayet/Hadis", icon: "menu_book" },
     { key: "video", label: "Videolar", icon: "video_library" },
     { key: "notifications", label: "Bildirimler", icon: "notifications" },
+    { key: "users", label: "Kullanıcılar", icon: "group", adminOnly: true },
   ];
+
+  const visibleTabs = TABS.filter(t => !t.adminOnly || isAdmin);
 
   return (
     <div className="fixed inset-0 z-50 overflow-auto bg-background">
       {/* Header */}
       <div className="sticky top-0 z-10 border-b border-primary/10 bg-card">
         <div className="flex items-center justify-between px-4 py-3">
-          <h3 className="text-lg font-bold">Admin Paneli</h3>
+          <h3 className="text-lg font-bold">
+            Admin Paneli
+            {isModerator && !isAdmin && <span className="ml-2 text-xs text-muted-foreground">(Moderatör)</span>}
+          </h3>
           <div className="flex items-center gap-2">
             <button onClick={handleLogout} className="text-xs text-muted-foreground">Çıkış</button>
             <button onClick={onClose}>
@@ -307,9 +376,8 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
             </button>
           </div>
         </div>
-        {/* Tabs */}
         <div className="flex overflow-x-auto scrollbar-hide">
-          {TABS.map((t) => (
+          {visibleTabs.map((t) => (
             <button
               key={t.key}
               onClick={() => setActiveTab(t.key)}
@@ -344,16 +412,26 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
             <div>
               <h4 className="text-sm font-bold mb-2">Mevcut ({wallpapers.length})</h4>
               <div className="space-y-2">
-                {wallpapers.map((w) => (
+                {wallpapers.map((w, i) => (
                   <div key={w.id} className="flex items-center gap-3 rounded-xl border border-primary/10 bg-card p-3">
+                    <div className="flex flex-col gap-0.5">
+                      <button onClick={() => moveWallpaper(i, "up")} disabled={i === 0} className="text-muted-foreground disabled:opacity-20">
+                        <span className="material-symbols-outlined text-[16px]">arrow_upward</span>
+                      </button>
+                      <button onClick={() => moveWallpaper(i, "down")} disabled={i === wallpapers.length - 1} className="text-muted-foreground disabled:opacity-20">
+                        <span className="material-symbols-outlined text-[16px]">arrow_downward</span>
+                      </button>
+                    </div>
                     <img src={w.image_url} alt="" className="h-12 w-12 rounded-lg object-cover" />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-bold truncate">{w.turkish_text || w.category}</p>
                       <p className="text-[10px] text-muted-foreground">{w.category}</p>
                     </div>
-                    <button onClick={() => deleteWallpaper(w.id)} className="text-destructive">
-                      <span className="material-symbols-outlined text-[18px]">delete</span>
-                    </button>
+                    {canModify(w) && (
+                      <button onClick={() => deleteWallpaper(w.id)} className="text-destructive">
+                        <span className="material-symbols-outlined text-[18px]">delete</span>
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -384,12 +462,14 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                 {dailyItems.map((item) => (
                   <div key={item.id} className="rounded-xl border border-primary/10 bg-card p-3">
                     <div className="flex items-center justify-between mb-1">
-                      <span className={cn("text-[10px] font-bold uppercase px-2 py-0.5 rounded-full", item.type === "ayet" ? "bg-primary/10 text-primary" : "bg-accent/10 text-accent")}>{item.type}</span>
+                      <span className={cn("text-[10px] font-bold uppercase px-2 py-0.5 rounded-full", item.type === "ayet" ? "bg-primary/10 text-primary" : "bg-accent/10 text-accent-foreground")}>{item.type}</span>
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] text-muted-foreground">{item.date}</span>
-                        <button onClick={() => deleteDaily(item.id)} className="text-destructive">
-                          <span className="material-symbols-outlined text-[14px]">delete</span>
-                        </button>
+                        {canModify(item) && (
+                          <button onClick={() => deleteDaily(item.id)} className="text-destructive">
+                            <span className="material-symbols-outlined text-[14px]">delete</span>
+                          </button>
+                        )}
                       </div>
                     </div>
                     <p className="text-xs font-arabic mt-1" dir="rtl">{item.arabic_text?.substring(0, 60)}...</p>
@@ -421,9 +501,17 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
             <div>
               <h4 className="text-sm font-bold mb-2">Mevcut ({playlists.length})</h4>
               <div className="space-y-2">
-                {playlists.map((p) => (
+                {playlists.map((p, i) => (
                   <div key={p.id} className="rounded-xl border border-primary/10 bg-card p-3">
                     <div className="flex items-center gap-3">
+                      <div className="flex flex-col gap-0.5">
+                        <button onClick={() => moveVideo(i, "up")} disabled={i === 0} className="text-muted-foreground disabled:opacity-20">
+                          <span className="material-symbols-outlined text-[14px]">arrow_upward</span>
+                        </button>
+                        <button onClick={() => moveVideo(i, "down")} disabled={i === playlists.length - 1} className="text-muted-foreground disabled:opacity-20">
+                          <span className="material-symbols-outlined text-[14px]">arrow_downward</span>
+                        </button>
+                      </div>
                       {p.cover_image_url ? <img src={p.cover_image_url} alt="" className="h-12 w-12 rounded-lg object-cover" /> : <div className="h-12 w-12 rounded-lg bg-primary/5 flex items-center justify-center"><span className="material-symbols-outlined text-primary/30">playlist_play</span></div>}
                       <div className="flex-1 min-w-0">
                         <p className="font-bold text-sm truncate">{p.title}</p>
@@ -431,9 +519,15 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                       </div>
                     </div>
                     <div className="flex gap-2 mt-2 pt-2 border-t border-primary/5">
-                      <button onClick={() => { setVidEditId(p.id); setVidTitle(p.title); setVidUrl(p.youtube_playlist_url); setVidDesc(p.description || ""); }} className="flex-1 rounded-lg bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary">Düzenle</button>
-                      <button onClick={() => togglePublishVideo(p.id, p.is_published)} className="flex-1 rounded-lg bg-accent/10 px-3 py-1.5 text-xs font-medium text-accent">{p.is_published ? "Gizle" : "Yayınla"}</button>
-                      <button onClick={() => deleteVideo(p.id)} className="rounded-lg bg-destructive/10 px-3 py-1.5 text-xs font-medium text-destructive">Sil</button>
+                      {canModify(p) && (
+                        <button onClick={() => { setVidEditId(p.id); setVidTitle(p.title); setVidUrl(p.youtube_playlist_url); setVidDesc(p.description || ""); }} className="flex-1 rounded-lg bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary">Düzenle</button>
+                      )}
+                      {canModify(p) && (
+                        <button onClick={() => togglePublishVideo(p.id, p.is_published)} className="flex-1 rounded-lg bg-accent/10 px-3 py-1.5 text-xs font-medium">{p.is_published ? "Gizle" : "Yayınla"}</button>
+                      )}
+                      {canModify(p) && (
+                        <button onClick={() => deleteVideo(p.id)} className="rounded-lg bg-destructive/10 px-3 py-1.5 text-xs font-medium text-destructive">Sil</button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -464,9 +558,11 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                       <p className="text-sm font-bold">{n.title}</p>
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] text-muted-foreground">{new Date(n.created_at).toLocaleDateString("tr-TR")}</span>
-                        <button onClick={() => deleteNotification(n.id)} className="text-destructive">
-                          <span className="material-symbols-outlined text-[14px]">delete</span>
-                        </button>
+                        {canModify(n) && (
+                          <button onClick={() => deleteNotification(n.id)} className="text-destructive">
+                            <span className="material-symbols-outlined text-[14px]">delete</span>
+                          </button>
+                        )}
                       </div>
                     </div>
                     <p className="text-xs text-muted-foreground">{n.body.substring(0, 100)}...</p>
@@ -475,6 +571,63 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ===== USERS TAB ===== */}
+        {activeTab === "users" && isAdmin && (
+          <div className="space-y-4">
+            <h4 className="text-sm font-bold">Kayıtlı Kullanıcılar ({users.length})</h4>
+            <div className="space-y-2">
+              {users.map((u) => {
+                const role = getUserRole(u.user_id);
+                const isCurrentUser = u.user_id === currentUserId;
+                return (
+                  <div key={u.id} className="rounded-xl border border-primary/10 bg-card p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold truncate">{u.email}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className={cn(
+                            "text-[10px] font-bold uppercase px-2 py-0.5 rounded-full",
+                            role === "admin" ? "bg-primary/10 text-primary" :
+                            role === "moderator" ? "bg-accent/10 text-accent-foreground" :
+                            "bg-muted text-muted-foreground"
+                          )}>
+                            {role === "admin" ? "Admin" : role === "moderator" ? "Moderatör" : "Kullanıcı"}
+                          </span>
+                          {u.is_banned && (
+                            <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-destructive/10 text-destructive">Banlı</span>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          Kayıt: {new Date(u.created_at).toLocaleDateString("tr-TR")}
+                        </p>
+                      </div>
+                    </div>
+                    {!isCurrentUser && role !== "admin" && (
+                      <div className="flex gap-2 pt-2 border-t border-primary/5">
+                        {role !== "moderator" ? (
+                          <button onClick={() => grantRole(u.user_id, "moderator")} className="flex-1 rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary">
+                            Moderatör Yap
+                          </button>
+                        ) : (
+                          <button onClick={() => revokeRole(u.user_id)} className="flex-1 rounded-lg bg-accent/10 px-3 py-1.5 text-xs font-medium text-accent-foreground">
+                            Yetkiyi Kaldır
+                          </button>
+                        )}
+                        <button onClick={() => toggleBan(u.user_id, u.is_banned)} className={cn(
+                          "flex-1 rounded-lg px-3 py-1.5 text-xs font-medium",
+                          u.is_banned ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"
+                        )}>
+                          {u.is_banned ? "Ban Kaldır" : "Banla"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
