@@ -1,9 +1,13 @@
 // Push notification utilities for İKRA app
 
+const VAPID_PUBLIC_KEY = ''; // Will be set when push service is configured
+
 export async function requestNotificationPermission(): Promise<boolean> {
   if (!('Notification' in window)) return false;
+  
   if (Notification.permission === 'granted') return true;
   if (Notification.permission === 'denied') return false;
+  
   const result = await Notification.requestPermission();
   return result === 'granted';
 }
@@ -29,6 +33,7 @@ export async function scheduleLocalNotification(
         payload: { title, body, tag: tag || 'ikra-local', icon: '/icons/icon-192.png' },
       });
     } else {
+      // Fallback to Notification API directly
       new Notification(title, {
         body,
         icon: '/icons/icon-192.png',
@@ -44,10 +49,11 @@ export function cancelScheduledNotification(timerId: number) {
   window.clearTimeout(timerId);
 }
 
+// Schedule prayer notifications based on user preferences
 export function schedulePrayerNotifications(
   times: Record<string, string>,
   toggles: Record<string, boolean>,
-  offsets: Record<string, number>
+  offsets: Record<string, string>
 ): number[] {
   const timerIds: number[] = [];
   const now = new Date();
@@ -68,7 +74,14 @@ export function schedulePrayerNotifications(
     const prayerDate = new Date(now);
     prayerDate.setHours(h, m, 0, 0);
 
-    const offsetMinutes = offsets[key] || 0;
+    // Parse offset
+    const offsetStr = offsets[key] || 'Vakitte';
+    let offsetMinutes = 0;
+    if (offsetStr.includes('5')) offsetMinutes = 5;
+    else if (offsetStr.includes('10')) offsetMinutes = 10;
+    else if (offsetStr.includes('15')) offsetMinutes = 15;
+    else if (offsetStr.includes('30')) offsetMinutes = 30;
+
     const notifyTime = prayerDate.getTime() - offsetMinutes * 60 * 1000;
     const delay = notifyTime - nowMs;
 
@@ -90,11 +103,11 @@ export function schedulePrayerNotifications(
   return timerIds;
 }
 
+// Schedule daily ayet/hadis notification
 export async function scheduleDailyContentNotification(
   type: 'ayet' | 'hadis',
   hour: number,
-  minute: number,
-  contentText?: string
+  minute: number
 ): Promise<number | null> {
   const now = new Date();
   const target = new Date(now);
@@ -106,15 +119,14 @@ export async function scheduleDailyContentNotification(
 
   const delay = target.getTime() - now.getTime();
   const title = type === 'ayet' ? '📖 Günün Ayeti' : '📿 Günün Hadisi';
-  const body = contentText
-    ? contentText.substring(0, 200) + (contentText.length > 200 ? '…' : '')
-    : type === 'ayet'
-      ? 'Günün ayetini okumak için tıklayın'
-      : 'Günün hadisini okumak için tıklayın';
+  const body = type === 'ayet'
+    ? 'Günün ayetini okumak için tıklayın'
+    : 'Günün hadisini okumak için tıklayın';
 
   return scheduleLocalNotification(title, body, delay, `daily-${type}`);
 }
 
+// Register background sync
 export async function registerBackgroundSync(tag: string) {
   if ('serviceWorker' in navigator && 'SyncManager' in window) {
     const reg = await navigator.serviceWorker.ready;
