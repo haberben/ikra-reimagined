@@ -133,15 +133,17 @@ export default function HomePage({ city, onNavigate, onNotifications, onZikirmat
               <button className="p-1 text-muted-foreground hover:text-primary">
                 <span className="material-symbols-outlined text-[20px]">share</span>
               </button>
-              <button
-                onClick={() => ayet && toggleFavorite(ayet.id, "ayet")}
-                className="p-1 text-muted-foreground hover:text-primary"
-              >
-                <span
-                  className={cn("material-symbols-outlined text-[20px]", ayet && isFavorite(ayet.id) && "text-destructive")}
-                  style={ayet && isFavorite(ayet.id) ? { fontVariationSettings: "'FILL' 1" } : {}}
-                >favorite</span>
-              </button>
+              {ayet && (
+                <button
+                  onClick={() => toggleFavorite(ayet.id, "ayet")}
+                  className="p-1 text-muted-foreground hover:text-primary"
+                >
+                  <span
+                    className={cn("material-symbols-outlined text-[20px]", isFavorite(ayet.id) && "text-destructive")}
+                    style={isFavorite(ayet.id) ? { fontVariationSettings: "'FILL' 1" } : {}}
+                  >favorite</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
