@@ -61,8 +61,12 @@ export default function VideoSection() {
     try { return JSON.parse(localStorage.getItem("ikra_watched_videos") || "{}"); } catch { return {}; }
   });
 
+  const playerRef = useRef<any>(null);
+  const playerContainerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     fetchPlaylists();
+    loadYTApi();
   }, []);
 
   const fetchPlaylists = async () => {
