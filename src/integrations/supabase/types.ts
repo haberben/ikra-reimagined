@@ -17,6 +17,7 @@ export type Database = {
       daily_content: {
         Row: {
           arabic_text: string
+          created_by_user_id: string | null
           date: string
           id: string
           source: string | null
@@ -25,6 +26,7 @@ export type Database = {
         }
         Insert: {
           arabic_text: string
+          created_by_user_id?: string | null
           date?: string
           id?: string
           source?: string | null
@@ -33,6 +35,7 @@ export type Database = {
         }
         Update: {
           arabic_text?: string
+          created_by_user_id?: string | null
           date?: string
           id?: string
           source?: string | null
@@ -113,6 +116,7 @@ export type Database = {
         Row: {
           body: string
           created_at: string
+          created_by_user_id: string | null
           id: string
           image_url: string | null
           title: string
@@ -121,6 +125,7 @@ export type Database = {
         Insert: {
           body: string
           created_at?: string
+          created_by_user_id?: string | null
           id?: string
           image_url?: string | null
           title: string
@@ -129,10 +134,38 @@ export type Database = {
         Update: {
           body?: string
           created_at?: string
+          created_by_user_id?: string | null
           id?: string
           image_url?: string | null
           title?: string
           video_url?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+          is_banned: boolean
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          is_banned?: boolean
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          is_banned?: boolean
+          user_id?: string
         }
         Relationships: []
       }
@@ -158,6 +191,7 @@ export type Database = {
         Row: {
           cover_image_url: string | null
           created_at: string
+          created_by_user_id: string | null
           description: string | null
           id: string
           is_published: boolean
@@ -170,6 +204,7 @@ export type Database = {
         Insert: {
           cover_image_url?: string | null
           created_at?: string
+          created_by_user_id?: string | null
           description?: string | null
           id?: string
           is_published?: boolean
@@ -182,6 +217,7 @@ export type Database = {
         Update: {
           cover_image_url?: string | null
           created_at?: string
+          created_by_user_id?: string | null
           description?: string | null
           id?: string
           is_published?: boolean
@@ -197,24 +233,30 @@ export type Database = {
         Row: {
           arabic_text: string | null
           category: string
+          created_by_user_id: string | null
           id: string
           image_url: string
+          sort_order: number
           turkish_text: string | null
           uploaded_at: string
         }
         Insert: {
           arabic_text?: string | null
           category: string
+          created_by_user_id?: string | null
           id?: string
           image_url: string
+          sort_order?: number
           turkish_text?: string | null
           uploaded_at?: string
         }
         Update: {
           arabic_text?: string | null
           category?: string
+          created_by_user_id?: string | null
           id?: string
           image_url?: string
+          sort_order?: number
           turkish_text?: string | null
           uploaded_at?: string
         }
