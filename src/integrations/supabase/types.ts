@@ -166,6 +166,44 @@ export type Database = {
         }
         Relationships: []
       }
+      playlist_videos: {
+        Row: {
+          created_at: string
+          id: string
+          playlist_id: string
+          sort_order: number
+          thumbnail_url: string | null
+          title: string
+          youtube_video_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          playlist_id: string
+          sort_order?: number
+          thumbnail_url?: string | null
+          title: string
+          youtube_video_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          playlist_id?: string
+          sort_order?: number
+          thumbnail_url?: string | null
+          title?: string
+          youtube_video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "playlist_videos_playlist_id_fkey"
+            columns: ["playlist_id"]
+            isOneToOne: false
+            referencedRelation: "video_playlists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
