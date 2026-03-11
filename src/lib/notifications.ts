@@ -1,14 +1,22 @@
 // Push notification utilities for İKRA app
 import { supabase } from "@/integrations/supabase/client";
 
-const VAPID_PUBLIC_KEY = ''; // Will be set when push service is configured
+const isNative = () => !!(window as any).Capacitor?.isNativePlatform?.();
 
 export async function requestNotificationPermission(): Promise<boolean> {
+  if (isNative()) {
+    try {
+      const { LocalNotifications } = await import("@capacitor/local-notifications");
+      const result = await LocalNotifications.requestPermissions();
+      return result.display === "granted";
+    } catch {
+      return false;
+    }
+  }
+
   if (!('Notification' in window)) return false;
-  
   if (Notification.permission === 'granted') return true;
   if (Notification.permission === 'denied') return false;
-  
   const result = await Notification.requestPermission();
   return result === 'granted';
 }
@@ -16,6 +24,13 @@ export async function requestNotificationPermission(): Promise<boolean> {
 export function getNotificationPermission(): NotificationPermission | 'unsupported' {
   if (!('Notification' in window)) return 'unsupported';
   return Notification.permission;
+}
+
+// Unique ID generator for Capacitor notifications (needs integer IDs)
+let notifIdCounter = Math.floor(Math.random() * 10000);
+function nextNotifId(): number {
+  notifIdCounter += 1;
+  return notifIdCounter;
 }
 
 export async function scheduleLocalNotification(
@@ -27,6 +42,33 @@ export async function scheduleLocalNotification(
   const permitted = await requestNotificationPermission();
   if (!permitted) return null;
 
+  if (isNative()) {
+    try {
+      const { LocalNotifications } = await import("@capacitor/local-notifications");
+      const id = nextNotifId();
+      const scheduleAt = new Date(Date.now() + delayMs);
+      
+      await LocalNotifications.schedule({
+        notifications: [
+          {
+            title,
+            body,
+            id,
+            schedule: { at: scheduleAt },
+            sound: undefined,
+            smallIcon: "ic_stat_icon_config_sample",
+            iconColor: "#1a8a4a",
+          },
+        ],
+      });
+      return id;
+    } catch (e) {
+      console.error("Capacitor local notification error:", e);
+      return null;
+    }
+  }
+
+  // Web fallback with setTimeout
   const timerId = window.setTimeout(() => {
     if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
       navigator.serviceWorker.controller.postMessage({
@@ -45,14 +87,37 @@ export async function scheduleLocalNotification(
   return timerId;
 }
 
-export function cancelScheduledNotification(timerId: number) {
+export async function cancelScheduledNotification(timerId: number) {
+  if (isNative()) {
+    try {
+      const { LocalNotifications } = await import("@capacitor/local-notifications");
+      await LocalNotifications.cancel({ notifications: [{ id: timerId }] });
+    } catch {
+      // ignore
+    }
+    return;
+  }
   window.clearTimeout(timerId);
+}
+
+// Cancel all pending native notifications
+async function cancelAllNativeNotifications() {
+  if (isNative()) {
+    try {
+      const { LocalNotifications } = await import("@capacitor/local-notifications");
+      const pending = await LocalNotifications.getPending();
+      if (pending.notifications.length > 0) {
+        await LocalNotifications.cancel({ notifications: pending.notifications.map(n => ({ id: n.id })) });
+      }
+    } catch {
+      // ignore
+    }
+  }
 }
 
 // Fetch a random ayet or hadis from daily_content
 async function fetchRandomContent(): Promise<{ turkish_text: string; source: string | null; type: string } | null> {
   try {
-    // Try today's content first
     const today = new Date().toISOString().split('T')[0];
     const { data: todayData } = await supabase
       .from('daily_content')
@@ -61,14 +126,12 @@ async function fetchRandomContent(): Promise<{ turkish_text: string; source: str
       .limit(2);
 
     if (todayData && todayData.length > 0) {
-      // Pick random from today's content
       return todayData[Math.floor(Math.random() * todayData.length)];
     }
 
-    // Fallback: get any random content
-    const { data: allData, count } = await supabase
+    const { data: allData } = await supabase
       .from('daily_content')
-      .select('turkish_text, source, type', { count: 'exact' });
+      .select('turkish_text, source, type');
 
     if (allData && allData.length > 0) {
       return allData[Math.floor(Math.random() * allData.length)];
@@ -86,6 +149,9 @@ export async function schedulePrayerNotifications(
   toggles: Record<string, boolean>,
   offsets: Record<string, string>
 ): Promise<number[]> {
+  // Cancel all existing native notifications first to avoid duplicates
+  await cancelAllNativeNotifications();
+
   const timerIds: number[] = [];
   const now = new Date();
   const nowMs = now.getTime();
@@ -111,10 +177,10 @@ export async function schedulePrayerNotifications(
     // Parse offset
     const offsetStr = offsets[key] || 'Vakitte';
     let offsetMinutes = 0;
-    if (offsetStr.includes('5')) offsetMinutes = 5;
-    else if (offsetStr.includes('10')) offsetMinutes = 10;
+    if (offsetStr.includes('30')) offsetMinutes = 30;
     else if (offsetStr.includes('15')) offsetMinutes = 15;
-    else if (offsetStr.includes('30')) offsetMinutes = 30;
+    else if (offsetStr.includes('10')) offsetMinutes = 10;
+    else if (offsetStr.includes('5')) offsetMinutes = 5;
 
     const notifyTime = prayerDate.getTime() - offsetMinutes * 60 * 1000;
     const delay = notifyTime - nowMs;
