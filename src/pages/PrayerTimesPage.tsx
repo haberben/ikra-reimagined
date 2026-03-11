@@ -183,7 +183,11 @@ export default function PrayerTimesPage({ city, setCity, onNotifications, onMenu
                       </select>
                     )}
                     <button
-                      onClick={() => setNotifications({ ...notifications, [p.key]: !notifications[p.key] })}
+                      onClick={() => {
+                        const updated = { ...notifications, [p.key]: !notifications[p.key] };
+                        setNotifications(updated);
+                        localStorage.setItem("ikra_prayer_notifs", JSON.stringify(updated));
+                      }}
                       className={cn(
                         "h-[31px] w-[51px] rounded-full transition-colors",
                         notifications[p.key] ? "bg-primary" : "bg-muted"
