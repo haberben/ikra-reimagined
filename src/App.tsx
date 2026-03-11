@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import BottomNav from "@/components/layout/BottomNav";
 import InstallPrompt from "@/components/InstallPrompt";
 import MenuDrawer from "@/components/layout/MenuDrawer";
-import { useTheme } from "@/hooks/useTheme";
+import Onboarding from "@/pages/Onboarding";
 import Onboarding from "@/pages/Onboarding";
 import HomePage from "@/pages/HomePage";
 import PrayerTimesPage from "@/pages/PrayerTimesPage";
