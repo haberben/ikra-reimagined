@@ -12,6 +12,12 @@
     "LocalNotifications": {
       "smallIcon": "ic_stat_icon_config_sample",
       "iconColor": "#1a8a4a"
+    },
+    "LiveUpdates": {
+      "appId": "029da7b4",
+      "channel": "Production",
+      "autoUpdateMethod": "background",
+      "maxVersions": 2
     }
   }
 }
