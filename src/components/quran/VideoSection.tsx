@@ -1,24 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-
-// Load YouTube IFrame API once
-let ytApiLoaded = false;
-let ytApiPromise: Promise<void> | null = null;
-function loadYTApi(): Promise<void> {
-  if (ytApiLoaded) return Promise.resolve();
-  if (ytApiPromise) return ytApiPromise;
-  ytApiPromise = new Promise((resolve) => {
-    const tag = document.createElement("script");
-    tag.src = "https://www.youtube.com/iframe_api";
-    document.head.appendChild(tag);
-    (window as any).onYouTubeIframeAPIReady = () => {
-      ytApiLoaded = true;
-      resolve();
-    };
-  });
-  return ytApiPromise;
-}
 
 interface VideoPlaylist {
   id: string;
@@ -61,12 +43,8 @@ export default function VideoSection() {
     try { return JSON.parse(localStorage.getItem("ikra_watched_videos") || "{}"); } catch { return {}; }
   });
 
-  const playerRef = useRef<any>(null);
-  const playerContainerRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     fetchPlaylists();
-    loadYTApi();
   }, []);
 
   const fetchPlaylists = async () => {
@@ -112,70 +90,6 @@ export default function VideoSection() {
     setLastWatched(updated);
     localStorage.setItem("ikra_video_progress_v2", JSON.stringify(updated));
   };
-
-  // Auto-play next video when current ends
-  const playNextVideo = useCallback(() => {
-    if (!activePlaylist || !activeVideoId) return;
-    const currentIndex = videos.findIndex((v) => v.youtube_video_id === activeVideoId);
-    // Mark current as watched
-    const current = watchedVideos[activePlaylist.id] || [];
-    if (!current.includes(activeVideoId)) {
-      const updatedWatched = {
-        ...watchedVideos,
-        [activePlaylist.id]: [...current, activeVideoId],
-      };
-      setWatchedVideos(updatedWatched);
-      localStorage.setItem("ikra_watched_videos", JSON.stringify(updatedWatched));
-    }
-    // Play next
-    if (currentIndex >= 0 && currentIndex < videos.length - 1) {
-      const nextVideo = videos[currentIndex + 1];
-      selectVideo(nextVideo.youtube_video_id, activePlaylist.id);
-    }
-  }, [activePlaylist, activeVideoId, videos, watchedVideos]);
-
-  // Initialize/update YouTube player
-  useEffect(() => {
-    if (!activeVideoId || !playerContainerRef.current) return;
-    
-    const initPlayer = async () => {
-      await loadYTApi();
-      const YT = (window as any).YT;
-      if (!YT?.Player) return;
-
-      // Destroy existing player
-      if (playerRef.current) {
-        try { playerRef.current.destroy(); } catch {}
-        playerRef.current = null;
-      }
-
-      playerRef.current = new YT.Player(playerContainerRef.current, {
-        videoId: activeVideoId,
-        playerVars: {
-          rel: 0,
-          autoplay: 1,
-          playsinline: 1,
-        },
-        events: {
-          onStateChange: (event: any) => {
-            // YT.PlayerState.ENDED === 0
-            if (event.data === 0) {
-              playNextVideo();
-            }
-          },
-        },
-      });
-    };
-
-    initPlayer();
-
-    return () => {
-      if (playerRef.current) {
-        try { playerRef.current.destroy(); } catch {}
-        playerRef.current = null;
-      }
-    };
-  }, [activeVideoId, playNextVideo]);
 
   const toggleWatched = (e: React.MouseEvent, videoId: string, playlistId: string) => {
     e.stopPropagation();
@@ -264,8 +178,15 @@ export default function VideoSection() {
               {/* Active video player */}
               {activeVideoId && (
                 <div className="rounded-xl overflow-hidden border border-primary/10 shadow-sm mb-4">
-                  <div className="aspect-video bg-black">
-                    <div ref={playerContainerRef} className="h-full w-full" />
+                  <div className="aspect-video">
+                    <iframe
+                      key={activeVideoId}
+                      src={`https://www.youtube.com/embed/${activeVideoId}?rel=0`}
+                      className="h-full w-full"
+                      allow="autoplay; encrypted-media; picture-in-picture"
+                      allowFullScreen
+                      title={videos.find(v => v.youtube_video_id === activeVideoId)?.title || ""}
+                    />
                   </div>
                   <div className="p-3 bg-card flex items-center justify-between">
                     <div className="flex-1 min-w-0">
