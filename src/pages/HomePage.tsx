@@ -133,63 +133,50 @@ export default function HomePage({ city, onNavigate, onNotifications, onZikirmat
               <button className="p-1 text-muted-foreground hover:text-primary">
                 <span className="material-symbols-outlined text-[20px]">share</span>
               </button>
-              <button
-                onClick={() => ayet && toggleFavorite(ayet.id, "ayet")}
-                className="p-1 text-muted-foreground hover:text-primary"
-              >
-                <span
-                  className={cn("material-symbols-outlined text-[20px]", ayet && isFavorite(ayet.id) && "text-destructive")}
-                  style={ayet && isFavorite(ayet.id) ? { fontVariationSettings: "'FILL' 1" } : {}}
-                >favorite</span>
-              </button>
+              {ayet && (
+                <button
+                  onClick={() => toggleFavorite(ayet.id, "ayet")}
+                  className="p-1 text-muted-foreground hover:text-primary"
+                >
+                  <span
+                    className={cn("material-symbols-outlined text-[20px]", isFavorite(ayet.id) && "text-destructive")}
+                    style={isFavorite(ayet.id) ? { fontVariationSettings: "'FILL' 1" } : {}}
+                  >favorite</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
       </div>
 
       {/* Günün Hadisi */}
-      {hadis && (
-        <div className="mt-4 px-4">
-          <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-accent">Günün Hadisi</h3>
-          <div className="rounded-xl border border-accent/20 bg-card p-4 shadow-sm">
-            <div className="rounded-lg bg-accent/5 p-4">
-              <p className="font-arabic text-xl leading-loose text-foreground" dir="rtl">
-                {hadis.arabic_text}
-              </p>
-            </div>
-            <p className="mt-3 text-sm italic text-muted-foreground">
-              "{hadis.turkish_text}"
+      <div className="mt-4 px-4">
+        <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-accent">Günün Hadisi</h3>
+        <div className="rounded-xl border border-accent/20 bg-card p-4 shadow-sm">
+          <div className="rounded-lg bg-accent/5 p-4">
+            <p className="font-arabic text-xl leading-loose text-foreground" dir="rtl">
+              {hadis?.arabic_text || "خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ"}
             </p>
-            {hadis.source && (
-              <div className="mt-2 flex items-center justify-between">
-                <p className="text-xs text-accent/60">{hadis.source}</p>
-                <button
-                  onClick={() => toggleFavorite(hadis.id, "hadis")}
-                  className="p-1 text-muted-foreground hover:text-accent"
-                >
-                  <span
-                    className={cn("material-symbols-outlined text-[20px]", isFavorite(hadis.id) && "text-destructive")}
-                    style={isFavorite(hadis.id) ? { fontVariationSettings: "'FILL' 1" } : {}}
-                  >favorite</span>
-                </button>
-              </div>
-            )}
-            {!hadis.source && (
-              <div className="mt-2 flex justify-end">
-                <button
-                  onClick={() => toggleFavorite(hadis.id, "hadis")}
-                  className="p-1 text-muted-foreground hover:text-accent"
-                >
-                  <span
-                    className={cn("material-symbols-outlined text-[20px]", isFavorite(hadis.id) && "text-destructive")}
-                    style={isFavorite(hadis.id) ? { fontVariationSettings: "'FILL' 1" } : {}}
-                  >favorite</span>
-                </button>
-              </div>
+          </div>
+          <p className="mt-3 text-sm italic text-muted-foreground">
+            "{hadis?.turkish_text || "Sizin en hayırlınız Kur'an'ı öğrenen ve öğretendir."}"
+          </p>
+          <div className="mt-2 flex items-center justify-between">
+            <p className="text-xs text-accent/60">{hadis?.source || "Buhârî"}</p>
+            {hadis && (
+              <button
+                onClick={() => toggleFavorite(hadis.id, "hadis")}
+                className="p-1 text-muted-foreground hover:text-accent"
+              >
+                <span
+                  className={cn("material-symbols-outlined text-[20px]", isFavorite(hadis.id) && "text-destructive")}
+                  style={isFavorite(hadis.id) ? { fontVariationSettings: "'FILL' 1" } : {}}
+                >favorite</span>
+              </button>
             )}
           </div>
         </div>
-      )}
+      </div>
 
       {/* Keşfet Grid */}
       <div className="mt-6 px-4">
