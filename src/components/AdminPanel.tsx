@@ -441,6 +441,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
     { key: "daily", label: "Ayet/Hadis", icon: "menu_book" },
     { key: "video", label: "Videolar", icon: "video_library" },
     { key: "notifications", label: "Bildirimler", icon: "notifications" },
+    { key: "suggestions", label: "Öneriler", icon: "lightbulb" },
     { key: "users", label: "Kullanıcılar", icon: "group", adminOnly: true },
   ];
 
