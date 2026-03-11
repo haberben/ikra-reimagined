@@ -1,14 +1,17 @@
 {
-  "name": "İKRA - Namaz Vakitleri & Kur'an-ı Kerim",
+  "name": "İKRA",
   "short_name": "İKRA",
-  "description": "Namaz vakitleri, Kur'an-ı Kerim ve hatim uygulaması",
+  "description": "Namaz vakitleri, Kur'an-ı Kerim, hatim ve günlük dini içerikler",
   "start_url": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "theme_color": "#064c39",
   "background_color": "#f6f8f7",
-  "orientation": "portrait",
+  "categories": ["lifestyle", "education"],
+  "lang": "tr",
+  "dir": "ltr",
   "icons": [
-    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
   ]
 }
