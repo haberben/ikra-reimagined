@@ -6,7 +6,6 @@ import BottomNav from "@/components/layout/BottomNav";
 import InstallPrompt from "@/components/InstallPrompt";
 import MenuDrawer from "@/components/layout/MenuDrawer";
 import Onboarding from "@/pages/Onboarding";
-import Onboarding from "@/pages/Onboarding";
 import HomePage from "@/pages/HomePage";
 import PrayerTimesPage from "@/pages/PrayerTimesPage";
 import QuranPage from "@/pages/QuranPage";
