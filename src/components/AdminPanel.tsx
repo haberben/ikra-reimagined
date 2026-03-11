@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
-type AdminTab = "wallpaper" | "daily" | "video" | "notifications" | "users";
+type AdminTab = "wallpaper" | "daily" | "video" | "notifications" | "suggestions" | "users";
 
 interface AdminPanelProps {
   onClose: () => void;
@@ -72,6 +72,10 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
   const [syncingPlaylistId, setSyncingPlaylistId] = useState<string | null>(null);
   const [syncResult, setSyncResult] = useState<Record<string, string>>({});
 
+  // Suggestions state
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+
   // Notification state
   const [notifTitle, setNotifTitle] = useState("");
   const [notifBody, setNotifBody] = useState("");
@@ -133,6 +137,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
     fetchDailyContent();
     fetchPlaylists();
     fetchNotifications();
+    fetchSuggestions();
     fetchUsers();
   };
 
@@ -389,6 +394,72 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
     fetchNotifications();
   };
 
+  // ============ SUGGESTIONS ============
+  const fetchSuggestions = async () => {
+    setSuggestionsLoading(true);
+    const { data } = await supabase
+      .from("suggestions")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (data) setSuggestions(data);
+    setSuggestionsLoading(false);
+  };
+
+  const approveSuggestion = async (s: any) => {
+    try {
+      // Create the content based on category
+      if (s.category === "ayet" || s.category === "hadis") {
+        await supabase.from("daily_content").insert({
+          type: s.category,
+          arabic_text: s.arabic_text || "",
+          turkish_text: s.turkish_text || "",
+          source: s.source || null,
+          created_by_user_id: currentUserId,
+          contributor_name: s.user_display_name,
+        } as any);
+      } else if (s.category === "wallpaper" && s.image_url) {
+        await supabase.from("wallpapers").insert({
+          image_url: s.image_url,
+          category: "Günün Ayeti",
+          created_by_user_id: currentUserId,
+          contributor_name: s.user_display_name,
+        } as any);
+      } else if (s.category === "playlist" && s.youtube_url) {
+        const playlistId = extractPlaylistId(s.youtube_url);
+        if (playlistId) {
+          await supabase.from("video_playlists").insert({
+            title: s.title || "Önerilen Playlist",
+            youtube_playlist_url: s.youtube_url,
+            youtube_playlist_id: playlistId,
+            is_published: true,
+            sort_order: playlists.length,
+            created_by_user_id: currentUserId,
+            contributor_name: s.user_display_name,
+          } as any);
+        }
+      }
+      // Update suggestion status
+      await supabase.from("suggestions").update({
+        status: "approved",
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: currentUserId,
+      } as any).eq("id", s.id);
+      fetchSuggestions();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const rejectSuggestion = async (id: string, note?: string) => {
+    await supabase.from("suggestions").update({
+      status: "rejected",
+      admin_note: note || null,
+      reviewed_at: new Date().toISOString(),
+      reviewed_by: currentUserId,
+    } as any).eq("id", id);
+    fetchSuggestions();
+  };
+
   // Helper: can user delete/edit this item?
   const canModify = (item: any) => {
     if (isAdmin) return true;
@@ -441,6 +512,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
     { key: "daily", label: "Ayet/Hadis", icon: "menu_book" },
     { key: "video", label: "Videolar", icon: "video_library" },
     { key: "notifications", label: "Bildirimler", icon: "notifications" },
+    { key: "suggestions", label: "Öneriler", icon: "lightbulb" },
     { key: "users", label: "Kullanıcılar", icon: "group", adminOnly: true },
   ];
 
@@ -756,6 +828,117 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                 ))}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ===== SUGGESTIONS TAB ===== */}
+        {activeTab === "suggestions" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-bold">Gelen Öneriler</h4>
+              <button onClick={fetchSuggestions} className="text-xs text-primary font-medium flex items-center gap-1">
+                <span className="material-symbols-outlined text-[14px]">refresh</span>
+                Yenile
+              </button>
+            </div>
+
+            {suggestionsLoading ? (
+              <div className="flex justify-center py-8">
+                <span className="material-symbols-outlined animate-spin text-primary">progress_activity</span>
+              </div>
+            ) : suggestions.length === 0 ? (
+              <div className="text-center py-8">
+                <span className="material-symbols-outlined text-[40px] text-muted-foreground/30">lightbulb</span>
+                <p className="text-sm text-muted-foreground mt-2">Henüz öneri gelmedi</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {suggestions.map((s) => {
+                  const isPending = s.status === "pending";
+                  const isApproved = s.status === "approved";
+                  return (
+                    <div key={s.id} className={cn(
+                      "rounded-xl border bg-card p-4",
+                      isPending ? "border-yellow-500/30" : isApproved ? "border-primary/20" : "border-destructive/20"
+                    )}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className={cn(
+                            "text-[10px] font-bold uppercase px-2 py-0.5 rounded-full",
+                            s.category === "ayet" ? "bg-primary/10 text-primary" :
+                            s.category === "hadis" ? "bg-accent/10 text-accent-foreground" :
+                            s.category === "wallpaper" ? "bg-purple-500/10 text-purple-600" :
+                            "bg-blue-500/10 text-blue-600"
+                          )}>
+                            {s.category}
+                          </span>
+                          <span className={cn(
+                            "text-[10px] font-bold px-2 py-0.5 rounded-full",
+                            isPending ? "bg-yellow-500/10 text-yellow-600" :
+                            isApproved ? "bg-primary/10 text-primary" :
+                            "bg-destructive/10 text-destructive"
+                          )}>
+                            {isPending ? "Bekliyor" : isApproved ? "Onaylandı" : "Reddedildi"}
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground">
+                          {new Date(s.created_at).toLocaleDateString("tr-TR")}
+                        </span>
+                      </div>
+
+                      {/* User info */}
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="material-symbols-outlined text-[16px] text-muted-foreground">person</span>
+                        <span className="text-xs font-medium">{s.user_display_name}</span>
+                      </div>
+
+                      {/* Content preview */}
+                      {s.arabic_text && (
+                        <p className="text-xs font-arabic mb-1" dir="rtl">{s.arabic_text.substring(0, 100)}...</p>
+                      )}
+                      {s.turkish_text && (
+                        <p className="text-xs text-muted-foreground mb-1">{s.turkish_text.substring(0, 120)}...</p>
+                      )}
+                      {s.source && (
+                        <p className="text-[10px] text-primary mb-1">📖 {s.source}</p>
+                      )}
+                      {s.youtube_url && (
+                        <p className="text-[10px] text-blue-500 mb-1 truncate">🔗 {s.youtube_url}</p>
+                      )}
+                      {s.image_url && (
+                        <img src={s.image_url} alt="" className="w-full h-32 object-cover rounded-lg mb-2" />
+                      )}
+                      {s.title && (
+                        <p className="text-xs font-bold mb-1">{s.title}</p>
+                      )}
+                      {s.description && (
+                        <p className="text-xs text-muted-foreground mb-1">{s.description}</p>
+                      )}
+
+                      {/* Actions */}
+                      {isPending && (
+                        <div className="flex gap-2 mt-3 pt-2 border-t border-primary/5">
+                          <button
+                            onClick={() => approveSuggestion(s)}
+                            className="flex-1 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-primary-foreground flex items-center justify-center gap-1"
+                          >
+                            <span className="material-symbols-outlined text-[14px]">check_circle</span>
+                            Onayla & Yayınla
+                          </button>
+                          <button
+                            onClick={() => rejectSuggestion(s.id, "Uygun görülmedi")}
+                            className="flex-1 rounded-lg bg-destructive/10 px-3 py-2 text-xs font-bold text-destructive flex items-center justify-center gap-1"
+                          >
+                            <span className="material-symbols-outlined text-[14px]">cancel</span>
+                            Reddet
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 

@@ -17,6 +17,7 @@ export type Database = {
       daily_content: {
         Row: {
           arabic_text: string
+          contributor_name: string | null
           created_by_user_id: string | null
           date: string
           id: string
@@ -26,6 +27,7 @@ export type Database = {
         }
         Insert: {
           arabic_text: string
+          contributor_name?: string | null
           created_by_user_id?: string | null
           date?: string
           id?: string
@@ -35,6 +37,7 @@ export type Database = {
         }
         Update: {
           arabic_text?: string
+          contributor_name?: string | null
           created_by_user_id?: string | null
           date?: string
           id?: string
@@ -231,6 +234,63 @@ export type Database = {
         }
         Relationships: []
       }
+      suggestions: {
+        Row: {
+          admin_note: string | null
+          arabic_text: string | null
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source: string | null
+          status: string
+          title: string | null
+          turkish_text: string | null
+          user_display_name: string
+          user_id: string
+          youtube_url: string | null
+        }
+        Insert: {
+          admin_note?: string | null
+          arabic_text?: string | null
+          category: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source?: string | null
+          status?: string
+          title?: string | null
+          turkish_text?: string | null
+          user_display_name?: string
+          user_id: string
+          youtube_url?: string | null
+        }
+        Update: {
+          admin_note?: string | null
+          arabic_text?: string | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source?: string | null
+          status?: string
+          title?: string | null
+          turkish_text?: string | null
+          user_display_name?: string
+          user_id?: string
+          youtube_url?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -251,6 +311,7 @@ export type Database = {
       }
       video_playlists: {
         Row: {
+          contributor_name: string | null
           cover_image_url: string | null
           created_at: string
           created_by_user_id: string | null
@@ -264,6 +325,7 @@ export type Database = {
           youtube_playlist_url: string
         }
         Insert: {
+          contributor_name?: string | null
           cover_image_url?: string | null
           created_at?: string
           created_by_user_id?: string | null
@@ -277,6 +339,7 @@ export type Database = {
           youtube_playlist_url: string
         }
         Update: {
+          contributor_name?: string | null
           cover_image_url?: string | null
           created_at?: string
           created_by_user_id?: string | null
@@ -295,6 +358,7 @@ export type Database = {
         Row: {
           arabic_text: string | null
           category: string
+          contributor_name: string | null
           created_by_user_id: string | null
           id: string
           image_url: string
@@ -305,6 +369,7 @@ export type Database = {
         Insert: {
           arabic_text?: string | null
           category: string
+          contributor_name?: string | null
           created_by_user_id?: string | null
           id?: string
           image_url: string
@@ -315,6 +380,7 @@ export type Database = {
         Update: {
           arabic_text?: string | null
           category?: string
+          contributor_name?: string | null
           created_by_user_id?: string | null
           id?: string
           image_url?: string

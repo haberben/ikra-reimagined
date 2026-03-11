@@ -12,6 +12,7 @@ interface WallpaperItem {
   turkish_text: string | null;
   category: string;
   image_url: string;
+  contributor_name?: string | null;
 }
 
 interface GalleryPageProps {
@@ -108,6 +109,15 @@ export default function GalleryPage({ onNotifications, onMenuOpen }: GalleryPage
                       <span className="material-symbols-outlined text-white text-[16px]">download</span>
                     </button>
                   </div>
+                  {/* Contributor credit */}
+                  {w.contributor_name && (
+                    <div className="absolute bottom-2 left-2 right-2">
+                      <div className="flex items-center gap-1 rounded-full bg-black/40 backdrop-blur-sm px-2.5 py-1">
+                        <span className="material-symbols-outlined text-[12px] text-red-400" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
+                        <span className="text-[9px] text-white/90 font-medium truncate">{w.contributor_name} katkısıyla</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

@@ -15,6 +15,7 @@ import FavoritesPage from "@/pages/FavoritesPage";
 import HatimPage from "@/pages/HatimPage";
 import NotificationsPage from "@/pages/NotificationsPage";
 import ZikirmatikPage from "@/pages/ZikirmatikPage";
+import SuggestionsPage from "@/pages/SuggestionsPage";
 import AdminPanel from "@/components/AdminPanel";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +27,7 @@ const App = () => {
   const [city, setCity] = useState(() => localStorage.getItem("ikra_city") || "İstanbul");
   const [showNotifications, setShowNotifications] = useState(false);
   const [showZikirmatik, setShowZikirmatik] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [pageTransition, setPageTransition] = useState(false);
@@ -60,10 +62,21 @@ const App = () => {
     setTimeout(() => setShowZikirmatik(false), 300);
   };
 
+  const handleSuggestions = () => {
+    setPageTransition(true);
+    setTimeout(() => setShowSuggestions(true), 50);
+  };
+
+  const handleSuggestionsBack = () => {
+    setPageTransition(false);
+    setTimeout(() => setShowSuggestions(false), 300);
+  };
+
   const handleMenuNavigate = (target: string) => {
     setShowMenu(false);
     if (target === "notifications") handleNotifications();
     else if (target === "zikirmatik") handleZikirmatik();
+    else if (target === "suggestions") handleSuggestions();
     else if (target === "admin") setShowAdmin(true);
     else setActiveTab(target);
   };
@@ -108,6 +121,22 @@ const App = () => {
             pageTransition ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"
           )}>
             <ZikirmatikPage onBack={handleZikirmatikBack} />
+          </div>
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+  }
+
+  if (showSuggestions) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Sonner />
+          <div className={cn(
+            "transition-all duration-300 ease-out",
+            pageTransition ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"
+          )}>
+            <SuggestionsPage onBack={handleSuggestionsBack} />
           </div>
         </TooltipProvider>
       </QueryClientProvider>

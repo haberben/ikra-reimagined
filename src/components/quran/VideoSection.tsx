@@ -12,6 +12,7 @@ interface VideoPlaylist {
   is_published: boolean;
   sort_order: number;
   created_at: string;
+  contributor_name?: string | null;
 }
 
 interface PlaylistVideo {
@@ -251,6 +252,12 @@ export default function VideoSection() {
                     </div>
                     {p.description && (
                       <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{p.description}</p>
+                    )}
+                    {p.contributor_name && (
+                      <div className="flex items-center gap-1 mt-1.5">
+                        <span className="material-symbols-outlined text-[11px] text-red-400" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
+                        <span className="text-[9px] text-muted-foreground italic">{p.contributor_name} katkısıyla</span>
+                      </div>
                     )}
                   </div>
                 </button>
