@@ -687,7 +687,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                         <span className={cn("text-[10px] font-bold", p.is_published ? "text-primary" : "text-muted-foreground")}>{p.is_published ? "Yayında" : "Taslak"}</span>
                       </div>
                     </div>
-                    <div className="flex gap-2 mt-2 pt-2 border-t border-primary/5">
+                    <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-primary/5">
                       {canModify(p) && (
                         <button onClick={() => { setVidEditId(p.id); setVidTitle(p.title); setVidUrl(p.youtube_playlist_url); setVidDesc(p.description || ""); }} className="flex-1 rounded-lg bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary">Düzenle</button>
                       )}
@@ -695,9 +695,24 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                         <button onClick={() => togglePublishVideo(p.id, p.is_published)} className="flex-1 rounded-lg bg-accent/10 px-3 py-1.5 text-xs font-medium">{p.is_published ? "Gizle" : "Yayınla"}</button>
                       )}
                       {canModify(p) && (
+                        <button
+                          onClick={() => syncPlaylistVideos(p.id, p.youtube_playlist_id)}
+                          disabled={syncingPlaylistId === p.id}
+                          className="flex-1 rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary disabled:opacity-50 flex items-center justify-center gap-1"
+                        >
+                          <span className={cn("material-symbols-outlined text-[14px]", syncingPlaylistId === p.id && "animate-spin")}>
+                            {syncingPlaylistId === p.id ? "progress_activity" : "sync"}
+                          </span>
+                          {syncingPlaylistId === p.id ? "Senkronlanıyor..." : "Videoları Senkronla"}
+                        </button>
+                      )}
+                      {canModify(p) && (
                         <button onClick={() => deleteVideo(p.id)} className="rounded-lg bg-destructive/10 px-3 py-1.5 text-xs font-medium text-destructive">Sil</button>
                       )}
                     </div>
+                    {syncResult[p.id] && (
+                      <p className="text-[10px] mt-1 px-1">{syncResult[p.id]}</p>
+                    )}
                   </div>
                 ))}
               </div>
