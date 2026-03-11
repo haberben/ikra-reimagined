@@ -170,7 +170,11 @@ export default function PrayerTimesPage({ city, setCity, onNotifications, onMenu
                     {notifications[p.key] && (
                       <select
                         value={notifTimes[p.key] || "Vakitte"}
-                        onChange={(e) => setNotifTimes({ ...notifTimes, [p.key]: e.target.value })}
+                        onChange={(e) => {
+                          const updated = { ...notifTimes, [p.key]: e.target.value };
+                          setNotifTimes(updated);
+                          localStorage.setItem("ikra_prayer_notif_times", JSON.stringify(updated));
+                        }}
                         className="rounded-lg bg-secondary px-2 py-1 text-xs"
                       >
                         {TIME_OPTIONS.map((t) => (
