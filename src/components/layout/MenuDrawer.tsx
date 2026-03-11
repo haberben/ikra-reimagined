@@ -14,6 +14,7 @@ const MENU_ITEMS = [
   { icon: "home", label: "Ana Sayfa", target: "home" },
   { icon: "schedule", label: "Namaz Vakitleri", target: "times" },
   { icon: "menu_book", label: "Kur'an-ı Kerim", target: "quran" },
+  { icon: "favorite", label: "Favorilerim", target: "favorites" },
   { icon: "photo_library", label: "Galeri", target: "gallery" },
   { icon: "group", label: "Ortak Hatim", target: "hatim" },
   { icon: "counter_1", label: "Zikirmatik", target: "zikirmatik" },

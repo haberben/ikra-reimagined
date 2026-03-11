@@ -1,5 +1,6 @@
 import { usePrayerTimes, useCurrentPrayer } from "@/hooks/usePrayerTimes";
 import { useDailyContent } from "@/hooks/useDailyContent";
+import { useFavorites } from "@/hooks/useFavorites";
 import StickyHeader from "@/components/layout/StickyHeader";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +28,7 @@ export default function HomePage({ city, onNavigate, onNotifications, onZikirmat
   const { times, hijri, loading } = usePrayerTimes(city);
   const { current, next, remaining, progress } = useCurrentPrayer(times);
   const { ayet, hadis } = useDailyContent();
+  const { toggleFavorite, isFavorite } = useFavorites();
 
   const miniPrayers = times
     ? [
@@ -131,8 +133,14 @@ export default function HomePage({ city, onNavigate, onNotifications, onZikirmat
               <button className="p-1 text-muted-foreground hover:text-primary">
                 <span className="material-symbols-outlined text-[20px]">share</span>
               </button>
-              <button className="p-1 text-muted-foreground hover:text-primary">
-                <span className="material-symbols-outlined text-[20px]">favorite</span>
+              <button
+                onClick={() => ayet && toggleFavorite(ayet.id, "ayet")}
+                className="p-1 text-muted-foreground hover:text-primary"
+              >
+                <span
+                  className={cn("material-symbols-outlined text-[20px]", ayet && isFavorite(ayet.id) && "text-destructive")}
+                  style={ayet && isFavorite(ayet.id) ? { fontVariationSettings: "'FILL' 1" } : {}}
+                >favorite</span>
               </button>
             </div>
           </div>
@@ -153,7 +161,31 @@ export default function HomePage({ city, onNavigate, onNotifications, onZikirmat
               "{hadis.turkish_text}"
             </p>
             {hadis.source && (
-              <p className="mt-2 text-xs text-accent/60">{hadis.source}</p>
+              <div className="mt-2 flex items-center justify-between">
+                <p className="text-xs text-accent/60">{hadis.source}</p>
+                <button
+                  onClick={() => toggleFavorite(hadis.id, "hadis")}
+                  className="p-1 text-muted-foreground hover:text-accent"
+                >
+                  <span
+                    className={cn("material-symbols-outlined text-[20px]", isFavorite(hadis.id) && "text-destructive")}
+                    style={isFavorite(hadis.id) ? { fontVariationSettings: "'FILL' 1" } : {}}
+                  >favorite</span>
+                </button>
+              </div>
+            )}
+            {!hadis.source && (
+              <div className="mt-2 flex justify-end">
+                <button
+                  onClick={() => toggleFavorite(hadis.id, "hadis")}
+                  className="p-1 text-muted-foreground hover:text-accent"
+                >
+                  <span
+                    className={cn("material-symbols-outlined text-[20px]", isFavorite(hadis.id) && "text-destructive")}
+                    style={isFavorite(hadis.id) ? { fontVariationSettings: "'FILL' 1" } : {}}
+                  >favorite</span>
+                </button>
+              </div>
             )}
           </div>
         </div>

@@ -11,10 +11,12 @@ import HomePage from "@/pages/HomePage";
 import PrayerTimesPage from "@/pages/PrayerTimesPage";
 import QuranPage from "@/pages/QuranPage";
 import GalleryPage from "@/pages/GalleryPage";
+import FavoritesPage from "@/pages/FavoritesPage";
 import HatimPage from "@/pages/HatimPage";
 import NotificationsPage from "@/pages/NotificationsPage";
 import ZikirmatikPage from "@/pages/ZikirmatikPage";
 import AdminPanel from "@/components/AdminPanel";
+import { cn } from "@/lib/utils";
 
 const queryClient = new QueryClient();
 
@@ -26,16 +28,35 @@ const App = () => {
   const [showZikirmatik, setShowZikirmatik] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [pageTransition, setPageTransition] = useState(false);
   const { dark, toggle: toggleDark } = useTheme();
 
   const handleMenuOpen = () => setShowMenu(true);
-  const handleNotifications = () => setShowNotifications(true);
-  const handleZikirmatik = () => setShowZikirmatik(true);
+
+  const handleNotifications = () => {
+    setPageTransition(true);
+    setTimeout(() => setShowNotifications(true), 50);
+  };
+
+  const handleNotificationsBack = () => {
+    setPageTransition(false);
+    setTimeout(() => setShowNotifications(false), 300);
+  };
+
+  const handleZikirmatik = () => {
+    setPageTransition(true);
+    setTimeout(() => setShowZikirmatik(true), 50);
+  };
+
+  const handleZikirmatikBack = () => {
+    setPageTransition(false);
+    setTimeout(() => setShowZikirmatik(false), 300);
+  };
 
   const handleMenuNavigate = (target: string) => {
     setShowMenu(false);
-    if (target === "notifications") setShowNotifications(true);
-    else if (target === "zikirmatik") setShowZikirmatik(true);
+    if (target === "notifications") handleNotifications();
+    else if (target === "zikirmatik") handleZikirmatik();
     else if (target === "admin") setShowAdmin(true);
     else setActiveTab(target);
   };
@@ -59,7 +80,12 @@ const App = () => {
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Sonner />
-          <NotificationsPage onBack={() => setShowNotifications(false)} />
+          <div className={cn(
+            "transition-all duration-300 ease-out",
+            pageTransition ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"
+          )}>
+            <NotificationsPage onBack={handleNotificationsBack} />
+          </div>
         </TooltipProvider>
       </QueryClientProvider>
     );
@@ -70,7 +96,12 @@ const App = () => {
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Sonner />
-          <ZikirmatikPage onBack={() => setShowZikirmatik(false)} />
+          <div className={cn(
+            "transition-all duration-300 ease-out",
+            pageTransition ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"
+          )}>
+            <ZikirmatikPage onBack={handleZikirmatikBack} />
+          </div>
         </TooltipProvider>
       </QueryClientProvider>
     );
@@ -86,6 +117,8 @@ const App = () => {
         return <QuranPage onMenuOpen={handleMenuOpen} onNotifications={handleNotifications} />;
       case "gallery":
         return <GalleryPage onNotifications={handleNotifications} onMenuOpen={handleMenuOpen} />;
+      case "favorites":
+        return <FavoritesPage onNotifications={handleNotifications} onMenuOpen={handleMenuOpen} />;
       case "hatim":
         return <HatimPage onMenuOpen={handleMenuOpen} onNotifications={handleNotifications} />;
       default:
