@@ -12,6 +12,7 @@ interface VideoPlaylist {
   is_published: boolean;
   sort_order: number;
   created_at: string;
+  contributor_name?: string | null;
 }
 
 interface PlaylistVideo {
