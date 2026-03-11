@@ -71,9 +71,9 @@ export default function NotificationsPage({ onBack }: { onBack: () => void }) {
     // Fetch prayer times and schedule
     fetch(`https://api.aladhan.com/v1/timingsByCity?city=${encodeURIComponent(city)}&country=TR&method=13`)
       .then(r => r.json())
-      .then(data => {
+      .then(async (data) => {
         if (data.code === 200) {
-          const timers = schedulePrayerNotifications(data.data.timings, notifications, notifTimes);
+          const timers = await schedulePrayerNotifications(data.data.timings, notifications, notifTimes);
           setScheduledTimers(timers);
         }
       })
