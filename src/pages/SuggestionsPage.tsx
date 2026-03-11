@@ -144,6 +144,7 @@ export default function SuggestionsPage({ onBack }: SuggestionsPageProps) {
       // Reset form
       setArabicText(""); setTurkishText(""); setSource("");
       setYoutubeUrl(""); setImageUrl(""); setTitle(""); setDescription("");
+      setImageFile(null); setImagePreview(null); setCoverFile(null); setCoverPreview(null);
       fetchMySuggestions(userId);
     }
     setSending(false);
