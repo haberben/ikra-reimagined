@@ -153,7 +153,7 @@ export default function SuggestionsPage({ onBack }: SuggestionsPageProps) {
   const statusLabel = (s: string) => {
     if (s === "pending") return { text: "Bekliyor", color: "bg-yellow-500/10 text-yellow-600" };
     if (s === "approved") return { text: "Onaylandı ✅", color: "bg-primary/10 text-primary" };
-    return { text: "Reddedildi", color: "bg-destructive/10 text-destructive" };
+    return { text: "İncelendi", color: "bg-muted text-muted-foreground" };
   };
 
   if (loading) {
