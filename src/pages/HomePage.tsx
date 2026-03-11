@@ -28,6 +28,7 @@ export default function HomePage({ city, onNavigate, onNotifications, onZikirmat
   const { times, hijri, loading } = usePrayerTimes(city);
   const { current, next, remaining, progress } = useCurrentPrayer(times);
   const { ayet, hadis } = useDailyContent();
+  const { toggleFavorite, isFavorite } = useFavorites();
 
   const miniPrayers = times
     ? [
