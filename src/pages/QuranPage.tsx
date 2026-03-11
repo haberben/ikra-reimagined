@@ -11,14 +11,39 @@ interface Reciter {
   moshaf?: { server: string; supieces?: string }[];
 }
 
-const RECITER_TURKISH_NAMES: Record<number, string> = {
-  1: "Abdurrahman es-Sudeys", 2: "Abdul Basit Abdussamed", 3: "Maher el-Muaykili",
-  4: "Saad el-Gamidi", 5: "Mişari Raşid el-Afasi", 6: "Ahmed el-Acemi",
-  7: "Hani er-Rifai", 8: "Halid el-Celil", 9: "Faris Abbad",
-  10: "Yaser ed-Doseri", 11: "Abdullah Basfar", 12: "Ebu Bekir eş-Şatiri",
-  13: "Nasser el-Katami", 14: "Abdulmuhsin el-Kasım", 15: "Muhammed Eyyub",
-  16: "Mahmud Halil el-Husari", 17: "Muhammed Sıddık el-Minşavi",
-  18: "Ali Abdurrahman el-Huzeyfi", 19: "Abdullah el-Matrud", 20: "İdris Ebker",
+// Expanded Turkish names mapping by Arabic name for better coverage
+const RECITER_TURKISH_NAMES: Record<string, string> = {
+  "عبد الرحمن السديس": "Abdurrahman es-Sudeys",
+  "عبد الباسط عبد الصمد": "Abdul Basit Abdussamed",
+  "ماهر المعيقلي": "Maher el-Muaykili",
+  "سعد الغامدي": "Saad el-Gamidi",
+  "مشاري راشد العفاسي": "Mişari Raşid el-Afasi",
+  "أحمد العجمي": "Ahmed el-Acemi",
+  "هاني الرفاعي": "Hani er-Rifai",
+  "خالد الجليل": "Halid el-Celil",
+  "فارس عباد": "Faris Abbad",
+  "ياسر الدوسري": "Yaser ed-Doseri",
+  "عبد الله بصفر": "Abdullah Basfar",
+  "أبو بكر الشاطري": "Ebu Bekir eş-Şatiri",
+  "ناصر القطامي": "Nasser el-Katami",
+  "عبد المحسن القاسم": "Abdulmuhsin el-Kasım",
+  "محمد أيوب": "Muhammed Eyyub",
+  "محمود خليل الحصري": "Mahmud Halil el-Husari",
+  "محمد صديق المنشاوي": "Muhammed Sıddık el-Minşavi",
+  "علي عبد الرحمن الحذيفي": "Ali Abdurrahman el-Huzeyfi",
+  "عبد الله المطرود": "Abdullah el-Matrud",
+  "إدريس أبكر": "İdris Ebker",
+  "عبد الله عواد الجهني": "Abdullah Avvad el-Cüheni",
+  "سعود الشريم": "Suud eş-Şureym",
+  "محمد اللحيدان": "Muhammed el-Lüheydan",
+  "بندر بليلة": "Bender Beleyle",
+  "يوسف الشويعي": "Yusuf eş-Şüveyi",
+  "عبد الله الموسى": "Abdullah el-Musa",
+  "محمد الطبلاوي": "Muhammed et-Tablavi",
+  "مصطفى إسماعيل": "Mustafa İsmail",
+  "علي جابر": "Ali Cabir",
+  "عبد الرحمن بن جمال العوسي": "Abdurrahman el-Avsi",
+  "تركي بن عبد العزيز آل سعود": "Türki bin Abdülaziz",
 };
 
 const JUZ_DATA = Array.from({ length: 30 }, (_, i) => ({
@@ -26,7 +51,12 @@ const JUZ_DATA = Array.from({ length: 30 }, (_, i) => ({
   name: `${i + 1}. Cüz`,
 }));
 
-export default function QuranPage() {
+interface QuranPageProps {
+  onMenuOpen: () => void;
+  onNotifications: () => void;
+}
+
+export default function QuranPage({ onMenuOpen, onNotifications }: QuranPageProps) {
   const [subTab, setSubTab] = useState<"audio" | "video">("audio");
   const [reciters, setReciters] = useState<Reciter[]>([]);
   const [selectedReciter, setSelectedReciter] = useState<Reciter | null>(null);
@@ -46,7 +76,7 @@ export default function QuranPage() {
       .catch(console.error);
   }, []);
 
-  const getReciterTurkishName = (r: Reciter) => RECITER_TURKISH_NAMES[r.id] || r.name;
+  const getReciterTurkishName = (r: Reciter) => RECITER_TURKISH_NAMES[r.name] || r.name;
 
   const playJuz = (juzNum: number) => {
     if (!selectedReciter?.moshaf?.[0]) return;
@@ -94,7 +124,7 @@ export default function QuranPage() {
 
   return (
     <div className="pb-36">
-      <StickyHeader title="İKRA" subtitle="QURAN LIBRARY" rightIcon="search" />
+      <StickyHeader title="İKRA" subtitle="KUR'AN KÜTÜPHANESİ" onLeftClick={onMenuOpen} onRightClick={onNotifications} />
 
       <div className="flex border-b border-primary/10">
         <button onClick={() => setSubTab("audio")} className={cn("flex-1 py-3 text-sm font-bold", subTab === "audio" ? "border-b-2 border-primary text-primary" : "text-muted-foreground")}>
@@ -114,10 +144,10 @@ export default function QuranPage() {
             </div>
             <div className="flex items-center gap-2 text-xs">
               <span className="material-symbols-outlined text-accent text-[16px]">bookmark</span>
-              <span className="text-accent font-medium">Last Read • Son Okunan</span>
+              <span className="text-accent font-medium">Son Okunan</span>
             </div>
             <h3 className="mt-2 text-2xl font-bold">{lastRead.surah}</h3>
-            <p className="mt-1 text-sm opacity-70">Juz {lastRead.juz} • Page {lastRead.page} • {lastRead.juz}. Cüz</p>
+            <p className="mt-1 text-sm opacity-70">Cüz {lastRead.juz} • Sayfa {lastRead.page}</p>
             <GoldButton className="mt-4 text-foreground" icon="play_arrow" onClick={handleResume}>
               DEVAM ET
             </GoldButton>
@@ -126,12 +156,12 @@ export default function QuranPage() {
           {/* Hafızlar */}
           <div className="mt-6">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-primary">Reciters • Hafızlar</h3>
-              <button className="text-xs font-medium text-accent">Tümünü Gör</button>
+              <h3 className="text-sm font-bold uppercase tracking-wider text-primary">Hafızlar</h3>
             </div>
             <div className="mt-3 flex gap-4 overflow-x-auto scrollbar-hide pb-2">
               {reciters.map((r) => {
                 const isSelected = selectedReciter?.id === r.id;
+                const turkishName = getReciterTurkishName(r);
                 return (
                   <button key={r.id} onClick={() => setSelectedReciter(r)} className="flex flex-col items-center gap-1.5 shrink-0">
                     <div className={cn("relative flex h-20 w-20 items-center justify-center rounded-full border-2", isSelected ? "border-accent" : "border-primary/20")}>
@@ -142,7 +172,7 @@ export default function QuranPage() {
                         </div>
                       )}
                     </div>
-                    <span className="w-20 text-center text-[10px] font-medium leading-tight">{getReciterTurkishName(r)}</span>
+                    <span className="w-20 text-center text-[10px] font-medium leading-tight">{turkishName}</span>
                     <span className="w-20 truncate text-center text-[8px] text-muted-foreground font-arabic">{r.name}</span>
                   </button>
                 );
@@ -152,9 +182,7 @@ export default function QuranPage() {
 
           {/* Cüz Listesi */}
           <div className="mt-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-primary">Cüz Listesi</h3>
-            </div>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-primary">Cüz Listesi</h3>
             <div className="mt-3 space-y-2">
               {JUZ_DATA.map((juz) => {
                 const isActive = playingJuz === juz.number;
