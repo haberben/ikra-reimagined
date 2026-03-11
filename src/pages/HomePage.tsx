@@ -1,5 +1,6 @@
 import { usePrayerTimes, useCurrentPrayer } from "@/hooks/usePrayerTimes";
 import { useDailyContent } from "@/hooks/useDailyContent";
+import { useFavorites } from "@/hooks/useFavorites";
 import StickyHeader from "@/components/layout/StickyHeader";
 import { cn } from "@/lib/utils";
 
