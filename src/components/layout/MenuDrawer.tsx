@@ -6,6 +6,8 @@ interface MenuDrawerProps {
   onNavigate: (target: string) => void;
   city: string;
   userName: string;
+  dark?: boolean;
+  onToggleDark?: () => void;
 }
 
 const MENU_ITEMS = [
