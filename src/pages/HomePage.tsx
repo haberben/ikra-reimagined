@@ -26,6 +26,7 @@ const DISCOVER_ITEMS = [
 export default function HomePage({ city, onNavigate, onNotifications, onZikirmatik, onMenuOpen }: HomePageProps) {
   const { times, hijri, loading } = usePrayerTimes(city);
   const { current, next, remaining, progress } = useCurrentPrayer(times);
+  const { ayet, hadis } = useDailyContent();
 
   const miniPrayers = times
     ? [
