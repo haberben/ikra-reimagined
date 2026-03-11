@@ -76,8 +76,8 @@ export default function QuranPage({ onMenuOpen, onNotifications }: QuranPageProp
       .catch(console.error);
   }, []);
 
-  const getReciterTurkishName = (r: Reciter) => RECITER_TURKISH_NAMES[r.name] || null;
-  const getDisplayName = (r: Reciter) => RECITER_TURKISH_NAMES[r.name] || r.name;
+  const getReciterTurkishName = (r: Reciter) => RECITER_TURKISH_NAMES[r.id] || null;
+  const getDisplayName = (r: Reciter) => RECITER_TURKISH_NAMES[r.id] || r.name;
 
   const playJuz = (juzNum: number) => {
     if (!selectedReciter?.moshaf?.[0]) return;
