@@ -104,11 +104,11 @@ export function schedulePrayerNotifications(
 }
 
 // Schedule daily ayet/hadis notification
-export function scheduleDailyContentNotification(
+export async function scheduleDailyContentNotification(
   type: 'ayet' | 'hadis',
   hour: number,
   minute: number
-): number | null {
+): Promise<number | null> {
   const now = new Date();
   const target = new Date(now);
   target.setHours(hour, minute, 0, 0);
@@ -123,7 +123,7 @@ export function scheduleDailyContentNotification(
     ? 'Günün ayetini okumak için tıklayın'
     : 'Günün hadisini okumak için tıklayın';
 
-  return scheduleLocalNotification(title, body, delay, `daily-${type}`) as number | null;
+  return scheduleLocalNotification(title, body, delay, `daily-${type}`);
 }
 
 // Register background sync
