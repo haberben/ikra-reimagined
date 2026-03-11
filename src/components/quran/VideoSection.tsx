@@ -1,6 +1,40 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+
+// Load YouTube IFrame API once
+let ytApiLoaded = false;
+let ytApiPromise: Promise<void> | null = null;
+function loadYTApi(): Promise<void> {
+  if (ytApiLoaded && window.YT?.Player) return Promise.resolve();
+  if (ytApiPromise) return ytApiPromise;
+  ytApiPromise = new Promise((resolve) => {
+    if (window.YT?.Player) { ytApiLoaded = true; resolve(); return; }
+    const existing = document.getElementById("yt-iframe-api");
+    if (!existing) {
+      const tag = document.createElement("script");
+      tag.id = "yt-iframe-api";
+      tag.src = "https://www.youtube.com/iframe_api";
+      document.head.appendChild(tag);
+    }
+    const prev = (window as any).onYouTubeIframeAPIReady;
+    (window as any).onYouTubeIframeAPIReady = () => {
+      ytApiLoaded = true;
+      prev?.();
+      resolve();
+    };
+    // If API already loaded between checks
+    const check = setInterval(() => {
+      if (window.YT?.Player) { ytApiLoaded = true; clearInterval(check); resolve(); }
+    }, 200);
+    setTimeout(() => clearInterval(check), 10000);
+  });
+  return ytApiPromise;
+}
+
+declare global {
+  interface Window { YT: any; }
+}
 
 interface VideoPlaylist {
   id: string;
