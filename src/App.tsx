@@ -14,7 +14,7 @@ import GalleryPage from "@/pages/GalleryPage";
 import HatimPage from "@/pages/HatimPage";
 import NotificationsPage from "@/pages/NotificationsPage";
 import ZikirmatikPage from "@/pages/ZikirmatikPage";
-import DailyContentAdmin from "@/components/DailyContentAdmin";
+import AdminPanel from "@/components/AdminPanel";
 
 const queryClient = new QueryClient();
 
@@ -24,7 +24,7 @@ const App = () => {
   const [city, setCity] = useState(() => localStorage.getItem("ikra_city") || "İstanbul");
   const [showNotifications, setShowNotifications] = useState(false);
   const [showZikirmatik, setShowZikirmatik] = useState(false);
-  const [showDailyAdmin, setShowDailyAdmin] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const { dark, toggle: toggleDark } = useTheme();
 
@@ -36,7 +36,7 @@ const App = () => {
     setShowMenu(false);
     if (target === "notifications") setShowNotifications(true);
     else if (target === "zikirmatik") setShowZikirmatik(true);
-    else if (target === "daily_admin") setShowDailyAdmin(true);
+    else if (target === "admin") setShowAdmin(true);
     else setActiveTab(target);
   };
 
@@ -98,7 +98,7 @@ const App = () => {
       <TooltipProvider>
         <Sonner />
         <InstallPrompt />
-        {showDailyAdmin && <DailyContentAdmin onClose={() => setShowDailyAdmin(false)} />}
+        {showAdmin && <AdminPanel onClose={() => setShowAdmin(false)} />}
         <div className="min-h-screen bg-background">
           {renderTab()}
           <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />

@@ -64,7 +64,6 @@ export default function HatimPage({ onMenuOpen, onNotifications }: HatimPageProp
     loadPrivateGroups();
   }, []);
 
-  // Realtime subscription for global hatim
   useEffect(() => {
     if (!globalGroup) return;
     const channel = supabase
@@ -79,35 +78,19 @@ export default function HatimPage({ onMenuOpen, onNotifications }: HatimPageProp
   const loadGlobalHatim = async () => {
     setLoading(true);
     let { data: groups } = await supabase
-      .from("hatim_groups")
-      .select("*")
-      .eq("is_public", true)
-      .is("completed_at", null)
-      .order("created_at", { ascending: false })
-      .limit(1);
-
+      .from("hatim_groups").select("*").eq("is_public", true)
+      .is("completed_at", null).order("created_at", { ascending: false }).limit(1);
     let group = groups?.[0] || null;
-
     if (!group) {
-      // Create first global hatim
       const code = Math.random().toString(36).substring(2, 8).toUpperCase();
       const { data: newGroup } = await supabase
-        .from("hatim_groups")
-        .insert({ name: "Global Hatim #1", invite_code: code, is_public: true })
-        .select()
-        .single();
+        .from("hatim_groups").insert({ name: "Global Hatim #1", invite_code: code, is_public: true }).select().single();
       group = newGroup;
-
       if (group) {
-        // Create 30 juz slots
-        const juzRows = Array.from({ length: 30 }, (_, i) => ({
-          group_id: group!.id,
-          juz_number: i + 1,
-        }));
+        const juzRows = Array.from({ length: 30 }, (_, i) => ({ group_id: group!.id, juz_number: i + 1 }));
         await supabase.from("hatim_juz").insert(juzRows);
       }
     }
-
     if (group) {
       setGlobalGroup(group);
       await loadJuz(group.id, true);
@@ -117,11 +100,7 @@ export default function HatimPage({ onMenuOpen, onNotifications }: HatimPageProp
 
   const loadJuz = async (groupId: string, setLoadingState: boolean) => {
     if (setLoadingState) setLoading(true);
-    const { data } = await supabase
-      .from("hatim_juz")
-      .select("*")
-      .eq("group_id", groupId)
-      .order("juz_number");
+    const { data } = await supabase.from("hatim_juz").select("*").eq("group_id", groupId).order("juz_number");
     if (data) {
       if (activePrivateGroup?.id === groupId) setPrivateJuz(data);
       else setJuzSlots(data);
@@ -132,10 +111,7 @@ export default function HatimPage({ onMenuOpen, onNotifications }: HatimPageProp
   const loadPrivateGroups = async () => {
     const savedGroups = JSON.parse(localStorage.getItem("ikra_my_groups") || "[]");
     if (savedGroups.length > 0) {
-      const { data } = await supabase
-        .from("hatim_groups")
-        .select("*")
-        .in("id", savedGroups);
+      const { data } = await supabase.from("hatim_groups").select("*").in("id", savedGroups);
       if (data) setPrivateGroups(data);
     }
   };
@@ -144,12 +120,7 @@ export default function HatimPage({ onMenuOpen, onNotifications }: HatimPageProp
     const slots = isPrivate ? privateJuz : juzSlots;
     const slot = slots.find(j => j.juz_number === juzNum);
     if (!slot) return;
-
-    await supabase
-      .from("hatim_juz")
-      .update({ claimed_by: userId, claimed_by_name: claimName || userName, claimed_at: new Date().toISOString() })
-      .eq("id", slot.id);
-
+    await supabase.from("hatim_juz").update({ claimed_by: userId, claimed_by_name: claimName || userName, claimed_at: new Date().toISOString() }).eq("id", slot.id);
     setShowClaimModal(null);
     loadJuz(groupId, false);
   };
@@ -158,43 +129,33 @@ export default function HatimPage({ onMenuOpen, onNotifications }: HatimPageProp
     const slots = isPrivate ? privateJuz : juzSlots;
     const slot = slots.find(j => j.juz_number === juzNum);
     if (!slot) return;
-
-    await supabase
-      .from("hatim_juz")
-      .update({ completed_at: new Date().toISOString() })
-      .eq("id", slot.id);
-
+    await supabase.from("hatim_juz").update({ completed_at: new Date().toISOString() }).eq("id", slot.id);
     loadJuz(groupId, false);
-
     const completedCount = slots.filter(j => j.completed_at).length + 1;
     if (completedCount >= 30) {
       setShowConfetti(true);
-      await supabase
-        .from("hatim_groups")
-        .update({ completed_at: new Date().toISOString() })
-        .eq("id", groupId);
+      await supabase.from("hatim_groups").update({ completed_at: new Date().toISOString() }).eq("id", groupId);
     }
+  };
+
+  const handleUncomplete = async (juzNum: number, groupId: string, isPrivate: boolean) => {
+    const slots = isPrivate ? privateJuz : juzSlots;
+    const slot = slots.find(j => j.juz_number === juzNum);
+    if (!slot) return;
+    await supabase.from("hatim_juz").update({ completed_at: null }).eq("id", slot.id);
+    loadJuz(groupId, false);
   };
 
   const createGroup = async () => {
     const code = Math.random().toString(36).substring(2, 8).toUpperCase();
     const { data: newGroup } = await supabase
-      .from("hatim_groups")
-      .insert({ name: groupName || "Özel Hatim", invite_code: code, is_public: false, created_by: userId })
-      .select()
-      .single();
-
+      .from("hatim_groups").insert({ name: groupName || "Özel Hatim", invite_code: code, is_public: false, created_by: userId }).select().single();
     if (newGroup) {
-      const juzRows = Array.from({ length: 30 }, (_, i) => ({
-        group_id: newGroup.id,
-        juz_number: i + 1,
-      }));
+      const juzRows = Array.from({ length: 30 }, (_, i) => ({ group_id: newGroup.id, juz_number: i + 1 }));
       await supabase.from("hatim_juz").insert(juzRows);
-
       const saved = JSON.parse(localStorage.getItem("ikra_my_groups") || "[]");
       saved.push(newGroup.id);
       localStorage.setItem("ikra_my_groups", JSON.stringify(saved));
-
       setInviteCode(code);
       setShowCreateGroup(false);
       setGroupName("");
@@ -204,18 +165,10 @@ export default function HatimPage({ onMenuOpen, onNotifications }: HatimPageProp
 
   const handleJoinGroup = async () => {
     if (!joinCode.trim()) return;
-    const { data } = await supabase
-      .from("hatim_groups")
-      .select("*")
-      .eq("invite_code", joinCode.trim().toUpperCase())
-      .single();
-
+    const { data } = await supabase.from("hatim_groups").select("*").eq("invite_code", joinCode.trim().toUpperCase()).single();
     if (data) {
       const saved = JSON.parse(localStorage.getItem("ikra_my_groups") || "[]");
-      if (!saved.includes(data.id)) {
-        saved.push(data.id);
-        localStorage.setItem("ikra_my_groups", JSON.stringify(saved));
-      }
+      if (!saved.includes(data.id)) { saved.push(data.id); localStorage.setItem("ikra_my_groups", JSON.stringify(saved)); }
       setJoinCode("");
       loadPrivateGroups();
     }
@@ -223,11 +176,7 @@ export default function HatimPage({ onMenuOpen, onNotifications }: HatimPageProp
 
   const openPrivateGroup = async (group: HatimGroup) => {
     setActivePrivateGroup(group);
-    const { data } = await supabase
-      .from("hatim_juz")
-      .select("*")
-      .eq("group_id", group.id)
-      .order("juz_number");
+    const { data } = await supabase.from("hatim_juz").select("*").eq("group_id", group.id).order("juz_number");
     if (data) setPrivateJuz(data);
   };
 
@@ -237,7 +186,6 @@ export default function HatimPage({ onMenuOpen, onNotifications }: HatimPageProp
 
     return (
       <>
-        {/* Progress card */}
         <div className="rounded-xl bg-primary p-4 text-primary-foreground">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold">Hatim Durumu</h3>
@@ -246,9 +194,7 @@ export default function HatimPage({ onMenuOpen, onNotifications }: HatimPageProp
           <div className="mt-3 h-2 overflow-hidden rounded-full bg-primary-foreground/20">
             <div className="h-full rounded-full gold-gradient transition-all" style={{ width: `${(completed / 30) * 100}%` }} />
           </div>
-          <p className="mt-2 text-xs opacity-80">
-            {completed} Tamamlandı / {claimed} Alındı / {30 - claimed} Kalan
-          </p>
+          <p className="mt-2 text-xs opacity-80">{completed} Tamamlandı / {claimed} Alındı / {30 - claimed} Kalan</p>
         </div>
 
         <div className="mt-4 flex items-center justify-between">
@@ -278,9 +224,7 @@ export default function HatimPage({ onMenuOpen, onNotifications }: HatimPageProp
                     isCompleted ? "border-primary bg-primary/10" :
                     isClaimed ? "border-accent bg-accent/10" : "border-primary/20"
                   )}>
-                    <span className={cn("text-sm font-bold", isClaimed ? "text-accent" : "text-muted-foreground")}>
-                      {juz.juz_number}
-                    </span>
+                    <span className={cn("text-sm font-bold", isClaimed ? "text-accent" : "text-muted-foreground")}>{juz.juz_number}</span>
                     {isCompleted && (
                       <div className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary">
                         <span className="material-symbols-outlined text-primary-foreground text-[10px]">check</span>
@@ -294,7 +238,14 @@ export default function HatimPage({ onMenuOpen, onNotifications }: HatimPageProp
                 </div>
 
                 <div className="mt-2">
-                  {isCompleted ? (
+                  {isCompleted && isMine ? (
+                    <button
+                      onClick={() => handleUncomplete(juz.juz_number, groupId, isPrivate)}
+                      className="w-full rounded-full bg-muted px-3 py-1.5 text-[10px] font-bold uppercase text-muted-foreground"
+                    >
+                      ↩ Geri Al
+                    </button>
+                  ) : isCompleted ? (
                     <span className="block text-center text-[10px] font-bold text-primary">✓ Tamamlandı</span>
                   ) : isMine ? (
                     <button
@@ -372,7 +323,7 @@ export default function HatimPage({ onMenuOpen, onNotifications }: HatimPageProp
                 placeholder="Davet kodu girin..."
                 value={joinCode}
                 onChange={(e) => setJoinCode(e.target.value)}
-                className="flex-1 rounded-xl border border-primary/10 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="flex-1 rounded-xl border border-primary/10 bg-card px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
               <button onClick={handleJoinGroup} className="rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground">
                 Katıl
@@ -395,7 +346,6 @@ export default function HatimPage({ onMenuOpen, onNotifications }: HatimPageProp
             </div>
           )}
 
-          {/* My groups */}
           {privateGroups.length > 0 && (
             <div className="mt-6">
               <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary">Gruplarım</h3>
@@ -431,10 +381,10 @@ export default function HatimPage({ onMenuOpen, onNotifications }: HatimPageProp
               placeholder="Adınız"
               value={claimName}
               onChange={(e) => setClaimName(e.target.value)}
-              className="w-full rounded-lg border border-primary/10 px-4 py-2 text-sm"
+              className="w-full rounded-lg border border-primary/10 bg-card px-4 py-2 text-sm text-foreground"
             />
             <div className="mt-4 flex gap-2">
-              <button onClick={() => setShowClaimModal(null)} className="flex-1 rounded-lg bg-secondary px-4 py-2 text-sm">İptal</button>
+              <button onClick={() => setShowClaimModal(null)} className="flex-1 rounded-lg bg-secondary px-4 py-2 text-sm text-foreground">İptal</button>
               <button
                 onClick={() => {
                   const groupId = activePrivateGroup?.id || globalGroup?.id;
@@ -442,7 +392,7 @@ export default function HatimPage({ onMenuOpen, onNotifications }: HatimPageProp
                 }}
                 className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
               >
-                Cüz Al
+                Seç
               </button>
             </div>
           </div>
@@ -453,28 +403,27 @@ export default function HatimPage({ onMenuOpen, onNotifications }: HatimPageProp
       {showCreateGroup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="w-full max-w-sm rounded-xl bg-card p-6">
-            <h3 className="mb-4 text-lg font-bold">Özel Hatim Grubu</h3>
+            <h3 className="mb-4 text-lg font-bold">Özel Hatim Oluştur</h3>
             <input
               placeholder="Grup adı"
               value={groupName}
               onChange={(e) => setGroupName(e.target.value)}
-              className="mb-3 w-full rounded-lg border border-primary/10 px-4 py-2 text-sm"
+              className="w-full rounded-lg border border-primary/10 bg-card px-4 py-2 text-sm text-foreground"
             />
-            <div className="flex gap-2">
-              <button onClick={() => setShowCreateGroup(false)} className="flex-1 rounded-lg bg-secondary px-4 py-2 text-sm">İptal</button>
+            <div className="mt-4 flex gap-2">
+              <button onClick={() => setShowCreateGroup(false)} className="flex-1 rounded-lg bg-secondary px-4 py-2 text-sm text-foreground">İptal</button>
               <button onClick={createGroup} className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground">Oluştur</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Confetti */}
       {showConfetti && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4" onClick={() => setShowConfetti(false)}>
-          <div className="text-center">
-            <p className="text-6xl">🎉</p>
-            <h2 className="mt-4 text-2xl font-bold text-white">Hatim Tamamlandı!</h2>
-            <p className="mt-2 text-lg text-white/80">Allah kabul etsin 🤲</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowConfetti(false)}>
+          <div className="rounded-xl bg-card p-8 text-center">
+            <span className="text-6xl">🎉</span>
+            <h3 className="mt-4 text-xl font-bold">Hatim Tamamlandı!</h3>
+            <p className="mt-2 text-sm text-muted-foreground">Allah kabul etsin</p>
           </div>
         </div>
       )}
