@@ -19,6 +19,7 @@ const MENU_ITEMS = [
   { icon: "counter_1", label: "Zikirmatik", target: "zikirmatik" },
   { icon: "notifications", label: "Bildirimler", target: "notifications" },
   { icon: "explore", label: "Kıble Bulucu", target: "times" },
+  { icon: "edit_calendar", label: "Günlük İçerik (Admin)", target: "daily_admin" },
 ];
 
 export default function MenuDrawer({ open, onClose, onNavigate, city, userName, dark, onToggleDark }: MenuDrawerProps) {

@@ -14,6 +14,7 @@ import GalleryPage from "@/pages/GalleryPage";
 import HatimPage from "@/pages/HatimPage";
 import NotificationsPage from "@/pages/NotificationsPage";
 import ZikirmatikPage from "@/pages/ZikirmatikPage";
+import DailyContentAdmin from "@/components/DailyContentAdmin";
 
 const queryClient = new QueryClient();
 
