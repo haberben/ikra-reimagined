@@ -19,7 +19,6 @@ const MENU_ITEMS = [
   { icon: "counter_1", label: "Zikirmatik", target: "zikirmatik" },
   { icon: "notifications", label: "Bildirimler", target: "notifications" },
   { icon: "explore", label: "Kıble Bulucu", target: "times" },
-  { icon: "edit_calendar", label: "Günlük İçerik (Admin)", target: "daily_admin" },
 ];
 
 export default function MenuDrawer({ open, onClose, onNavigate, city, userName, dark, onToggleDark }: MenuDrawerProps) {
@@ -27,10 +26,8 @@ export default function MenuDrawer({ open, onClose, onNavigate, city, userName, 
 
   return (
     <div className="fixed inset-0 z-[60]" onClick={onClose}>
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50" />
 
-      {/* Drawer */}
       <div
         className="absolute left-0 top-0 bottom-0 w-72 bg-card shadow-2xl animate-in slide-in-from-left"
         onClick={(e) => e.stopPropagation()}
@@ -60,6 +57,17 @@ export default function MenuDrawer({ open, onClose, onNavigate, city, userName, 
               <span>{item.label}</span>
             </button>
           ))}
+
+          {/* Admin entry - separated */}
+          <div className="border-t border-primary/10 mt-2 pt-2">
+            <button
+              onClick={() => onNavigate("admin")}
+              className="flex w-full items-center gap-4 px-6 py-3 text-sm font-medium transition-colors hover:bg-primary/5"
+            >
+              <span className="material-symbols-outlined text-accent text-[22px]">admin_panel_settings</span>
+              <span className="text-accent">Admin Paneli</span>
+            </button>
+          </div>
         </div>
 
         {/* Footer */}
