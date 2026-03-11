@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import BottomNav from "@/components/layout/BottomNav";
 import InstallPrompt from "@/components/InstallPrompt";
 import MenuDrawer from "@/components/layout/MenuDrawer";
+import { useTheme } from "@/hooks/useTheme";
 import Onboarding from "@/pages/Onboarding";
 import HomePage from "@/pages/HomePage";
 import PrayerTimesPage from "@/pages/PrayerTimesPage";
@@ -28,13 +29,7 @@ const App = () => {
   const [showAdmin, setShowAdmin] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [pageTransition, setPageTransition] = useState(false);
-  const [dark, setDark] = useState(() => localStorage.getItem("ikra_theme") === "dark");
-  const toggleDark = () => setDark(d => !d);
-
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", dark);
-    localStorage.setItem("ikra_theme", dark ? "dark" : "light");
-  }, [dark]);
+  const { dark, toggle: toggleDark } = useTheme();
 
   const handleMenuOpen = () => setShowMenu(true);
 
