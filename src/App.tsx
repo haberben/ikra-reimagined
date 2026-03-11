@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import BottomNav from "@/components/layout/BottomNav";
 import InstallPrompt from "@/components/InstallPrompt";
 import MenuDrawer from "@/components/layout/MenuDrawer";
@@ -84,13 +83,11 @@ const App = () => {
   if (!onboarded) {
     return (
       <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Sonner />
-          <Onboarding onComplete={() => {
-            setOnboarded(true);
-            setCity(localStorage.getItem("ikra_city") || "İstanbul");
-          }} />
-        </TooltipProvider>
+        <Sonner />
+        <Onboarding onComplete={() => {
+          setOnboarded(true);
+          setCity(localStorage.getItem("ikra_city") || "İstanbul");
+        }} />
       </QueryClientProvider>
     );
   }
@@ -98,15 +95,13 @@ const App = () => {
   if (showNotifications) {
     return (
       <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Sonner />
-          <div className={cn(
-            "transition-all duration-300 ease-out",
-            pageTransition ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"
-          )}>
-            <NotificationsPage onBack={handleNotificationsBack} />
-          </div>
-        </TooltipProvider>
+        <Sonner />
+        <div className={cn(
+          "transition-all duration-300 ease-out",
+          pageTransition ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"
+        )}>
+          <NotificationsPage onBack={handleNotificationsBack} />
+        </div>
       </QueryClientProvider>
     );
   }
@@ -114,15 +109,13 @@ const App = () => {
   if (showZikirmatik) {
     return (
       <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Sonner />
-          <div className={cn(
-            "transition-all duration-300 ease-out",
-            pageTransition ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"
-          )}>
-            <ZikirmatikPage onBack={handleZikirmatikBack} />
-          </div>
-        </TooltipProvider>
+        <Sonner />
+        <div className={cn(
+          "transition-all duration-300 ease-out",
+          pageTransition ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"
+        )}>
+          <ZikirmatikPage onBack={handleZikirmatikBack} />
+        </div>
       </QueryClientProvider>
     );
   }
@@ -130,15 +123,13 @@ const App = () => {
   if (showSuggestions) {
     return (
       <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Sonner />
-          <div className={cn(
-            "transition-all duration-300 ease-out",
-            pageTransition ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"
-          )}>
-            <SuggestionsPage onBack={handleSuggestionsBack} />
-          </div>
-        </TooltipProvider>
+        <Sonner />
+        <div className={cn(
+          "transition-all duration-300 ease-out",
+          pageTransition ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"
+        )}>
+          <SuggestionsPage onBack={handleSuggestionsBack} />
+        </div>
       </QueryClientProvider>
     );
   }
@@ -164,24 +155,22 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Sonner />
-        <InstallPrompt />
-        {showAdmin && <AdminPanel onClose={() => setShowAdmin(false)} />}
-        <div className="min-h-screen bg-background">
-          {renderTab()}
-          <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
-        </div>
-        <MenuDrawer
-          open={showMenu}
-          onClose={() => setShowMenu(false)}
-          onNavigate={handleMenuNavigate}
-          city={city}
-          userName={localStorage.getItem("ikra_name") || ""}
-          dark={dark}
-          onToggleDark={toggleDark}
-        />
-      </TooltipProvider>
+      <Sonner />
+      <InstallPrompt />
+      {showAdmin && <AdminPanel onClose={() => setShowAdmin(false)} />}
+      <div className="min-h-screen bg-background">
+        {renderTab()}
+        <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+      </div>
+      <MenuDrawer
+        open={showMenu}
+        onClose={() => setShowMenu(false)}
+        onNavigate={handleMenuNavigate}
+        city={city}
+        userName={localStorage.getItem("ikra_name") || ""}
+        dark={dark}
+        onToggleDark={toggleDark}
+      />
     </QueryClientProvider>
   );
 };
