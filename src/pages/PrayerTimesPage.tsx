@@ -31,8 +31,12 @@ export default function PrayerTimesPage({ city, setCity, onNotifications, onMenu
   const { times, loading } = usePrayerTimes(city);
   const { ayet, hadis } = useDailyContent();
   const { toggleFavorite, isFavorite } = useFavorites();
-  const [notifications, setNotifications] = useState<Record<string, boolean>>({});
-  const [notifTimes, setNotifTimes] = useState<Record<string, string>>({});
+  const [notifications, setNotifications] = useState<Record<string, boolean>>(() => {
+    try { return JSON.parse(localStorage.getItem("ikra_prayer_notifs") || "{}"); } catch { return {}; }
+  });
+  const [notifTimes, setNotifTimes] = useState<Record<string, string>>(() => {
+    try { return JSON.parse(localStorage.getItem("ikra_prayer_notif_times") || "{}"); } catch { return {}; }
+  });
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [compassHeading, setCompassHeading] = useState<number | null>(null);
