@@ -65,7 +65,9 @@ export default function NotificationsPage({ onBack }: { onBack: () => void }) {
   // Schedule prayer notifications when toggles change
   useEffect(() => {
     // Clear existing timers
-    scheduledTimers.forEach(cancelScheduledNotification);
+    for (const t of scheduledTimers) {
+      cancelScheduledNotification(t);
+    }
 
     const city = localStorage.getItem("ikra_city") || "İstanbul";
     // Fetch prayer times and schedule
