@@ -19,6 +19,7 @@ const MENU_ITEMS = [
   { icon: "group", label: "Ortak Hatim", target: "hatim" },
   { icon: "counter_1", label: "Zikirmatik", target: "zikirmatik" },
   { icon: "notifications", label: "Bildirimler", target: "notifications" },
+  { icon: "lightbulb", label: "İçerik Öner", target: "suggestions" },
   { icon: "explore", label: "Kıble Bulucu", target: "times" },
 ];
 

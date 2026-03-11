@@ -127,6 +127,22 @@ const App = () => {
     );
   }
 
+  if (showSuggestions) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Sonner />
+          <div className={cn(
+            "transition-all duration-300 ease-out",
+            pageTransition ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"
+          )}>
+            <SuggestionsPage onBack={handleSuggestionsBack} />
+          </div>
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+  }
+
   const renderTab = () => {
     switch (activeTab) {
       case "home":
