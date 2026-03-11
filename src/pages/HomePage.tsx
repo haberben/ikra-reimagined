@@ -161,17 +161,15 @@ export default function HomePage({ city, onNavigate, onNotifications, onZikirmat
           </p>
           <div className="mt-2 flex items-center justify-between">
             <p className="text-xs text-accent/60">{hadis?.source || "Buhârî"}</p>
-            {hadis && (
-              <button
-                onClick={() => toggleFavorite(hadis.id, "hadis")}
-                className="p-1 text-muted-foreground hover:text-accent"
-              >
-                <span
-                  className={cn("material-symbols-outlined text-[20px]", isFavorite(hadis.id) && "text-destructive")}
-                  style={isFavorite(hadis.id) ? { fontVariationSettings: "'FILL' 1" } : {}}
-                >favorite</span>
-              </button>
-            )}
+            <button
+              onClick={() => hadis ? toggleFavorite(hadis.id, "hadis") : null}
+              className="p-1 text-muted-foreground hover:text-accent"
+            >
+              <span
+                className={cn("material-symbols-outlined text-[20px]", hadis && isFavorite(hadis.id) && "text-destructive")}
+                style={hadis && isFavorite(hadis.id) ? { fontVariationSettings: "'FILL' 1" } : {}}
+              >favorite</span>
+            </button>
           </div>
         </div>
       </div>
