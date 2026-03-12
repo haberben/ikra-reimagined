@@ -211,16 +211,23 @@ export default function HomePage({ city, onNavigate, onNotifications, onZikirmat
           </p>
           <div className="mt-2 flex items-center justify-between">
             <p className="text-xs text-accent/60">{hadis?.source || "Buhârî"}</p>
-            <button
-              onClick={() => hadis ? toggleFavorite(hadis.id, "hadis") : null}
-              className="p-1 text-muted-foreground hover:text-accent"
-            >
-              <span
-                className={cn("material-symbols-outlined text-[20px]", hadis && isFavorite(hadis.id) && "text-destructive")}
-                style={hadis && isFavorite(hadis.id) ? { fontVariationSettings: "'FILL' 1" } : {}}
-              >favorite</span>
-            </button>
-          </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => hadis && shareContent("hadis", hadis.arabic_text, hadis.turkish_text, hadis.source || undefined)}
+                className="p-1 text-muted-foreground hover:text-accent"
+              >
+                <span className="material-symbols-outlined text-[20px]">share</span>
+              </button>
+              <button
+                onClick={() => hadis ? toggleFavorite(hadis.id, "hadis") : null}
+                className="p-1 text-muted-foreground hover:text-accent"
+              >
+                <span
+                  className={cn("material-symbols-outlined text-[20px]", hadis && isFavorite(hadis.id) && "text-destructive")}
+                  style={hadis && isFavorite(hadis.id) ? { fontVariationSettings: "'FILL' 1" } : {}}
+                >favorite</span>
+              </button>
+            </div>
           {hadis?.contributor_name && (
             <div className="mt-2 flex items-center gap-1">
               <span className="material-symbols-outlined text-[12px] text-red-400" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
