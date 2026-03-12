@@ -23,6 +23,20 @@ interface GalleryPageProps {
 
 const isNative = () => !!(window as any).Capacitor?.isNativePlatform?.();
 
+async function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result as string;
+      // Remove the data:...;base64, prefix
+      const base64 = result.split(",")[1];
+      resolve(base64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
 export default function GalleryPage({ onNotifications, onMenuOpen }: GalleryPageProps) {
   const [activeCategory, setActiveCategory] = useState("Tümü");
   const [search, setSearch] = useState("");
@@ -35,50 +49,58 @@ export default function GalleryPage({ onNotifications, onMenuOpen }: GalleryPage
     if (downloading) return;
     setDownloading(id);
     try {
-      const response = await fetch(imageUrl, { mode: "cors" });
-      if (!response.ok) throw new Error("Görsel indirilemedi");
-      const blob = await response.blob();
       const fileName = `ikra-wallpaper-${id.slice(0, 8)}.jpg`;
 
       if (isNative()) {
-        // Native: Use Web Share API with File for saving to gallery
         try {
-          const file = new File([blob], fileName, { type: blob.type || "image/jpeg" });
-          if (navigator.share && navigator.canShare?.({ files: [file] })) {
-            await navigator.share({
-              files: [file],
-              title: "İKRA Duvar Kağıdı",
-            });
-            toast.success("Görsel paylaşıldı!");
-          } else {
-            // Fallback: save with Filesystem + notify
-            const { Filesystem, Directory } = await import("@capacitor/filesystem");
-            const reader = new FileReader();
-            const base64Promise = new Promise<string>((resolve) => {
-              reader.onloadend = () => resolve((reader.result as string).split(",")[1]);
-              reader.readAsDataURL(blob);
-            });
-            const base64Data = await base64Promise;
-            const result = await Filesystem.writeFile({
-              path: `Download/${fileName}`,
+          const { Filesystem, Directory } = await import("@capacitor/filesystem");
+          
+          // Try downloading directly via Filesystem.downloadFile if available
+          // Otherwise fetch + write
+          const response = await fetch(imageUrl, { mode: "cors" });
+          if (!response.ok) throw new Error("Görsel indirilemedi");
+          const blob = await response.blob();
+          const base64Data = await blobToBase64(blob);
+          
+          // Write to Documents directory (doesn't need WRITE_EXTERNAL_STORAGE on newer Android)
+          try {
+            await Filesystem.writeFile({
+              path: fileName,
               data: base64Data,
-              directory: Directory.ExternalStorage,
+              directory: Directory.Documents,
               recursive: true,
             });
-            toast.success("Görsel kaydedildi!", { description: "İndirilenler klasörüne kaydedildi" });
+            toast.success("Görsel kaydedildi!", { description: "Belgeler klasörüne kaydedildi" });
+          } catch {
+            // Fallback: try cache + share
+            const cacheResult = await Filesystem.writeFile({
+              path: fileName,
+              data: base64Data,
+              directory: Directory.Cache,
+            });
+            
+            // Try sharing the file
+            const file = new File([blob], fileName, { type: "image/jpeg" });
+            if (navigator.share && navigator.canShare?.({ files: [file] })) {
+              await navigator.share({ files: [file], title: "İKRA Duvar Kağıdı" });
+              toast.success("Görsel paylaşıldı!");
+            } else {
+              toast.success("Görsel kaydedildi!", { description: "Önbelleğe kaydedildi" });
+            }
           }
         } catch (e: any) {
-          // User cancelled share or filesystem error - try final fallback
           if (e?.message?.includes("canceled") || e?.message?.includes("abort")) {
-            // User cancelled, no error
+            // User cancelled share
           } else {
-            // Last resort: open in browser
-            window.open(imageUrl, "_blank");
-            toast.info("Görseli uzun basarak kaydedebilirsiniz");
+            console.error("Native download error:", e);
+            toast.error("İndirme başarısız oldu. Görseli uzun basarak kaydetmeyi deneyin.");
           }
         }
       } else {
         // Web: standard download
+        const response = await fetch(imageUrl, { mode: "cors" });
+        if (!response.ok) throw new Error("Görsel indirilemedi");
+        const blob = await response.blob();
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
