@@ -21,15 +21,40 @@ export function useDailyContent() {
 
     const fetchContent = async () => {
       setLoading(true);
+
+      // Try today's content first
       const { data } = await supabase
         .from("daily_content")
         .select("*")
         .eq("date", today);
 
-      if (data) {
+      if (data && data.length > 0) {
         setAyet(data.find((d) => d.type === "ayet") || null);
         setHadis(data.find((d) => d.type === "hadis") || null);
+        setLoading(false);
+        return;
       }
+
+      // Fallback: get most recent content (for days without specific content)
+      const { data: recentAyet } = await supabase
+        .from("daily_content")
+        .select("*")
+        .eq("type", "ayet")
+        .lte("date", today)
+        .order("date", { ascending: false })
+        .limit(1);
+
+      const { data: recentHadis } = await supabase
+        .from("daily_content")
+        .select("*")
+        .eq("type", "hadis")
+        .lte("date", today)
+        .order("date", { ascending: false })
+        .limit(1);
+
+      if (recentAyet && recentAyet.length > 0) setAyet(recentAyet[0]);
+      if (recentHadis && recentHadis.length > 0) setHadis(recentHadis[0]);
+
       setLoading(false);
     };
 

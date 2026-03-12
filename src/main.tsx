@@ -3,8 +3,8 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 
-// Register service worker
-if ('serviceWorker' in navigator) {
+// Register service worker (only in production / non-preview)
+if ('serviceWorker' in navigator && !window.location.hostname.includes('lovable.app')) {
   window.addEventListener('load', async () => {
     try {
       // Unregister old SWs first to clear stale cache

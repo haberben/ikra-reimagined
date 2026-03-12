@@ -5,6 +5,7 @@ import { useDailyContent } from "@/hooks/useDailyContent";
 import { useFavorites } from "@/hooks/useFavorites";
 import StickyHeader from "@/components/layout/StickyHeader";
 import { cn } from "@/lib/utils";
+import { schedulePrayerNotifications, requestNotificationPermission } from "@/lib/notifications";
 
 interface PrayerTimesPageProps {
   city: string;
@@ -23,19 +24,118 @@ const PRAYERS = [
 
 const TIME_OPTIONS = ["Vakitte", "5 dk önce", "10 dk önce", "15 dk önce", "30 dk önce"];
 
-// Istanbul Qibla bearing ~154°
-const QIBLA_BEARING = 154;
-const QIBLA_THRESHOLD = 5; // degrees tolerance
+// Kaaba coordinates
+const KAABA_LAT = 21.4225;
+const KAABA_LNG = 39.8262;
+
+// Calculate Qibla bearing from lat/lng
+function calculateQiblaBearing(lat: number, lng: number): number {
+  const latRad = (lat * Math.PI) / 180;
+  const lngRad = (lng * Math.PI) / 180;
+  const kaabaLatRad = (KAABA_LAT * Math.PI) / 180;
+  const kaabaLngRad = (KAABA_LNG * Math.PI) / 180;
+  const dLng = kaabaLngRad - lngRad;
+  const x = Math.sin(dLng);
+  const y = Math.cos(latRad) * Math.tan(kaabaLatRad) - Math.sin(latRad) * Math.cos(dLng);
+  let bearing = (Math.atan2(x, y) * 180) / Math.PI;
+  return ((bearing % 360) + 360) % 360;
+}
+
+// City coordinates lookup for Qibla calculation
+const CITY_COORDS: Record<string, [number, number]> = {
+  "İstanbul": [41.0082, 28.9784],
+  "Ankara": [39.9334, 32.8597],
+  "İzmir": [38.4237, 27.1428],
+  "Bursa": [40.1885, 29.0610],
+  "Antalya": [36.8969, 30.7133],
+  "Adana": [37.0, 35.3213],
+  "Konya": [37.8746, 32.4932],
+  "Gaziantep": [37.0662, 37.3833],
+  "Şanlıurfa": [37.1591, 38.7969],
+  "Diyarbakır": [37.9144, 40.2306],
+  "Kayseri": [38.7312, 35.4787],
+  "Trabzon": [41.0027, 39.7168],
+  "Samsun": [41.2867, 36.33],
+  "Erzurum": [39.9055, 41.2658],
+  "Eskişehir": [39.7767, 30.5206],
+  "Mersin": [36.8121, 34.6415],
+  "Manisa": [38.6191, 27.4289],
+  "Balıkesir": [39.6484, 27.8826],
+  "Malatya": [38.3552, 38.3095],
+  "Van": [38.4891, 43.3832],
+  "Elazığ": [38.681, 39.2264],
+  "Kocaeli": [40.8533, 29.8815],
+  "Sakarya": [40.6940, 30.4358],
+  "Tekirdağ": [41.2824, 27.5126],
+  "Edirne": [41.6818, 26.5623],
+  "Hatay": [36.4018, 36.3498],
+  "Mardin": [37.3212, 40.7245],
+  "Muğla": [37.2153, 28.3636],
+  "Denizli": [37.7765, 29.0864],
+  "Aydın": [37.8560, 27.8416],
+  "Sivas": [39.7477, 37.0179],
+  "Rize": [41.0201, 40.5234],
+  "Ordu": [40.9839, 37.8764],
+  "Afyonkarahisar": [38.7507, 30.5567],
+  "Bolu": [40.7360, 31.6065],
+  "Çanakkale": [40.1553, 26.4142],
+  "Zonguldak": [41.4564, 31.7987],
+  "Kırklareli": [41.7351, 27.2252],
+  "Aksaray": [38.3687, 34.0370],
+  "Nevşehir": [38.6244, 34.7239],
+  "Çorum": [40.5506, 34.9556],
+  "Amasya": [40.6499, 35.8353],
+  "Tokat": [40.3167, 36.5544],
+  "Kastamonu": [41.3887, 33.7827],
+  "Sinop": [42.0231, 35.1531],
+  "Giresun": [40.9128, 38.3895],
+  "Artvin": [41.1828, 41.8183],
+  "Bingöl": [38.8854, 40.4966],
+  "Bitlis": [38.4004, 42.1095],
+  "Muş": [38.7462, 41.4910],
+  "Hakkari": [37.5833, 43.7408],
+  "Siirt": [37.9273, 41.9459],
+  "Tunceli": [39.1079, 39.5472],
+  "Ağrı": [39.7191, 43.0503],
+  "Kars": [40.6013, 43.0975],
+  "Iğdır": [39.9237, 44.0450],
+  "Ardahan": [41.1105, 42.7022],
+  "Bayburt": [40.2552, 40.2249],
+  "Gümüşhane": [40.4386, 39.5086],
+  "Erzincan": [39.7500, 39.5000],
+  "Adıyaman": [37.7648, 38.2786],
+  "Kahramanmaraş": [37.5847, 36.9370],
+  "Osmaniye": [37.0746, 36.2478],
+  "Kilis": [36.7184, 37.1212],
+  "Batman": [37.8812, 41.1351],
+  "Şırnak": [37.4187, 42.4918],
+  "Bartın": [41.6344, 32.3375],
+  "Karabük": [41.2061, 32.6204],
+  "Düzce": [40.8438, 31.1565],
+  "Yalova": [40.6550, 29.2769],
+  "Bilecik": [40.0567, 30.0153],
+  "Burdur": [37.7203, 30.2903],
+  "Isparta": [37.7648, 30.5566],
+  "Karaman": [37.1759, 33.2287],
+  "Kırıkkale": [39.8468, 33.5153],
+  "Kırşehir": [39.1425, 34.1709],
+  "Kütahya": [39.4167, 29.9833],
+  "Niğde": [37.9667, 34.6833],
+  "Uşak": [38.6823, 29.4082],
+  "Yozgat": [39.8181, 34.8147],
+};
+
+const QIBLA_THRESHOLD = 5;
 
 export default function PrayerTimesPage({ city, setCity, onNotifications, onMenuOpen }: PrayerTimesPageProps) {
   const { times, loading } = usePrayerTimes(city);
   const { ayet, hadis } = useDailyContent();
   const { toggleFavorite, isFavorite } = useFavorites();
   const [notifications, setNotifications] = useState<Record<string, boolean>>(() => {
-    try { return JSON.parse(localStorage.getItem("ikra_prayer_notifs") || "{}"); } catch { return {}; }
+    try { return JSON.parse(localStorage.getItem("ikra_notif_toggles") || "{}"); } catch { return {}; }
   });
   const [notifTimes, setNotifTimes] = useState<Record<string, string>>(() => {
-    try { return JSON.parse(localStorage.getItem("ikra_prayer_notif_times") || "{}"); } catch { return {}; }
+    try { return JSON.parse(localStorage.getItem("ikra_notif_times") || "{}"); } catch { return {}; }
   });
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -43,22 +143,61 @@ export default function PrayerTimesPage({ city, setCity, onNotifications, onMenu
   const [compassActive, setCompassActive] = useState(false);
   const [permissionDenied, setPermissionDenied] = useState(false);
   const handlerRef = useRef<((e: DeviceOrientationEvent) => void) | null>(null);
+  const absHandlerRef = useRef<((e: DeviceOrientationEvent) => void) | null>(null);
 
   const filteredCities = TURKISH_CITIES.filter((c) =>
     c.toLowerCase().includes(search.toLowerCase())
   );
 
+  // Calculate qibla bearing for current city
+  const coords = CITY_COORDS[city] || CITY_COORDS["İstanbul"];
+  const qiblaBearing = calculateQiblaBearing(coords[0], coords[1]);
+
   // Calculate direction to Qibla
   const getQiblaDirection = () => {
     if (compassHeading === null) return null;
-    const diff = ((QIBLA_BEARING - compassHeading) % 360 + 360) % 360;
+    const diff = ((qiblaBearing - compassHeading) % 360 + 360) % 360;
     if (diff <= QIBLA_THRESHOLD || diff >= 360 - QIBLA_THRESHOLD) return "correct";
-    if (diff > 180) return "right"; // turn right
-    return "left"; // turn left
+    if (diff > 180) return "right";
+    return "left";
   };
 
   const qiblaDir = getQiblaDirection();
   const isOnQibla = qiblaDir === "correct";
+
+  // Schedule notifications when toggles or times change
+  useEffect(() => {
+    if (!times) return;
+    const hasAnyEnabled = Object.values(notifications).some(Boolean);
+    if (!hasAnyEnabled) return;
+
+    localStorage.setItem("ikra_notif_toggles", JSON.stringify(notifications));
+    localStorage.setItem("ikra_notif_times", JSON.stringify(notifTimes));
+
+    schedulePrayerNotifications(times, notifications, notifTimes);
+  }, [notifications, notifTimes, times]);
+
+  const handleToggleNotif = async (key: string) => {
+    const newVal = !notifications[key];
+    if (newVal) {
+      const granted = await requestNotificationPermission();
+      if (!granted) return;
+    }
+    const updated = { ...notifications, [key]: newVal };
+    setNotifications(updated);
+    localStorage.setItem("ikra_notif_toggles", JSON.stringify(updated));
+  };
+
+  const cleanupCompass = () => {
+    if (handlerRef.current) {
+      window.removeEventListener("deviceorientation", handlerRef.current);
+      handlerRef.current = null;
+    }
+    if (absHandlerRef.current) {
+      window.removeEventListener("deviceorientationabsolute" as any, absHandlerRef.current);
+      absHandlerRef.current = null;
+    }
+  };
 
   const startCompass = async () => {
     // iOS 13+ requires permission
@@ -69,26 +208,33 @@ export default function PrayerTimesPage({ city, setCity, onNotifications, onMenu
       } catch { setPermissionDenied(true); return; }
     }
 
-    if (handlerRef.current) {
-      window.removeEventListener("deviceorientation", handlerRef.current);
-    }
+    cleanupCompass();
 
+    let hasAbsolute = false;
+
+    // Try absolute orientation first (Android Chrome)
+    const absHandler = (e: any) => {
+      hasAbsolute = true;
+      const heading = e.alpha !== null ? (360 - e.alpha) % 360 : null;
+      if (heading !== null) setCompassHeading(heading);
+    };
+    absHandlerRef.current = absHandler;
+    window.addEventListener("deviceorientationabsolute" as any, absHandler);
+
+    // Fallback: regular deviceorientation (iOS webkitCompassHeading)
     const handler = (e: DeviceOrientationEvent) => {
-      // Use webkitCompassHeading for iOS, alpha for Android
+      if (hasAbsolute) return; // prefer absolute
       const heading = (e as any).webkitCompassHeading ?? (e.alpha !== null ? (360 - e.alpha) % 360 : null);
       if (heading !== null) setCompassHeading(heading);
     };
     handlerRef.current = handler;
     window.addEventListener("deviceorientation", handler);
+
     setCompassActive(true);
   };
 
   useEffect(() => {
-    return () => {
-      if (handlerRef.current) {
-        window.removeEventListener("deviceorientation", handlerRef.current);
-      }
-    };
+    return () => cleanupCompass();
   }, []);
 
   return (
@@ -173,7 +319,7 @@ export default function PrayerTimesPage({ city, setCity, onNotifications, onMenu
                         onChange={(e) => {
                           const updated = { ...notifTimes, [p.key]: e.target.value };
                           setNotifTimes(updated);
-                          localStorage.setItem("ikra_prayer_notif_times", JSON.stringify(updated));
+                          localStorage.setItem("ikra_notif_times", JSON.stringify(updated));
                         }}
                         className="rounded-lg bg-secondary px-2 py-1 text-xs"
                       >
@@ -183,11 +329,7 @@ export default function PrayerTimesPage({ city, setCity, onNotifications, onMenu
                       </select>
                     )}
                     <button
-                      onClick={() => {
-                        const updated = { ...notifications, [p.key]: !notifications[p.key] };
-                        setNotifications(updated);
-                        localStorage.setItem("ikra_prayer_notifs", JSON.stringify(updated));
-                      }}
+                      onClick={() => handleToggleNotif(p.key)}
                       className={cn(
                         "h-[31px] w-[51px] rounded-full transition-colors",
                         notifications[p.key] ? "bg-primary" : "bg-muted"
@@ -298,7 +440,7 @@ export default function PrayerTimesPage({ city, setCity, onNotifications, onMenu
               {/* Qibla needle */}
               <div
                 className="absolute inset-0 flex items-center justify-center transition-transform duration-300 ease-out"
-                style={{ transform: `rotate(${compassHeading !== null ? QIBLA_BEARING - compassHeading : QIBLA_BEARING}deg)` }}
+                style={{ transform: `rotate(${compassHeading !== null ? qiblaBearing - compassHeading : qiblaBearing}deg)` }}
               >
                 <div className="flex flex-col items-center">
                   <div className={cn(
@@ -360,7 +502,7 @@ export default function PrayerTimesPage({ city, setCity, onNotifications, onMenu
             </div>
 
             <p className="mt-3 text-[10px] text-muted-foreground text-center">
-              Kıble açısı: {QIBLA_BEARING}° (İstanbul için)
+              Kıble açısı: {Math.round(qiblaBearing)}° ({city})
               {compassHeading !== null && ` • Pusula: ${Math.round(compassHeading)}°`}
             </p>
           </div>
