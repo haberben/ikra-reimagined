@@ -3,6 +3,17 @@ import { supabase } from "@/integrations/supabase/client";
 
 const isNative = () => !!(window as any).Capacitor?.isNativePlatform?.();
 
+// Sound preferences
+export type NotifSound = "default" | "ezan" | "silent";
+
+export function getNotifSoundPref(): NotifSound {
+  return (localStorage.getItem("ikra_notif_sound") as NotifSound) || "default";
+}
+
+export function setNotifSoundPref(sound: NotifSound) {
+  localStorage.setItem("ikra_notif_sound", sound);
+}
+
 export async function requestNotificationPermission(): Promise<boolean> {
   if (isNative()) {
     try {
@@ -42,12 +53,25 @@ export async function scheduleLocalNotification(
   const permitted = await requestNotificationPermission();
   if (!permitted) return null;
 
+  const sound = getNotifSoundPref();
+  if (sound === "silent" && isNative()) {
+    // Still schedule but without sound
+  }
+
   if (isNative()) {
     try {
       const { LocalNotifications } = await import("@capacitor/local-notifications");
       const id = nextNotifId();
       const scheduleAt = new Date(Date.now() + delayMs);
       
+      // Sound file mapping for Android res/raw
+      let soundFile: string | undefined = undefined;
+      if (sound === "ezan") {
+        soundFile = "ezan.mp3";
+      } else if (sound === "silent") {
+        soundFile = undefined; // No sound
+      }
+
       await LocalNotifications.schedule({
         notifications: [
           {
@@ -55,9 +79,10 @@ export async function scheduleLocalNotification(
             body,
             id,
             schedule: { at: scheduleAt },
-            sound: undefined,
+            sound: soundFile,
             smallIcon: "ic_stat_icon_config_sample",
             iconColor: "#1a8a4a",
+            ...(sound === "silent" ? { extra: { silent: "true" } } : {}),
           },
         ],
       });
@@ -73,13 +98,14 @@ export async function scheduleLocalNotification(
     if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
       navigator.serviceWorker.controller.postMessage({
         type: 'SHOW_NOTIFICATION',
-        payload: { title, body, tag: tag || 'ikra-local', icon: '/icons/icon-192.png' },
+        payload: { title, body, tag: tag || 'ikra-local', icon: '/icons/icon-192.png', silent: sound === 'silent' },
       });
     } else {
       new Notification(title, {
         body,
         icon: '/icons/icon-192.png',
         tag: tag || 'ikra-local',
+        silent: sound === 'silent',
       });
     }
   }, delayMs);
@@ -131,7 +157,9 @@ async function fetchRandomContent(): Promise<{ turkish_text: string; source: str
 
     const { data: allData } = await supabase
       .from('daily_content')
-      .select('turkish_text, source, type');
+      .select('turkish_text, source, type')
+      .order('date', { ascending: false })
+      .limit(10);
 
     if (allData && allData.length > 0) {
       return allData[Math.floor(Math.random() * allData.length)];
