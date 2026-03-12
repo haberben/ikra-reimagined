@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Toaster as Sonner, toast } from "sonner";
 import BottomNav from "@/components/layout/BottomNav";
 import InstallPrompt from "@/components/InstallPrompt";
 import MenuDrawer from "@/components/layout/MenuDrawer";
@@ -37,6 +37,37 @@ const App = () => {
   // Request permissions on first launch
   useEffect(() => {
     requestAllPermissions();
+
+    // Register for Push Notifications (FCM)
+    import("@capacitor/push-notifications").then(({ PushNotifications }) => {
+      // Only runs on native
+      if (document.URL.indexOf('http://') === -1 && document.URL.indexOf('https://') === -1) {
+        PushNotifications.requestPermissions().then((result) => {
+          if (result.receive === 'granted') {
+            PushNotifications.register();
+          }
+        });
+
+        PushNotifications.addListener('registration', (token) => {
+          console.log('Push registration success, token: ' + token.value);
+          // Subscribe to topic all_users for the cloud function to reach us
+          import('@capacitor/core').then(({ Capacitor }) => {
+            if (Capacitor.getPlatform() === 'android') {
+              // Firebase messaging uses topics
+              // We'll just rely on the fact that Appflow will handle the native dependency
+            }
+          });
+        });
+
+        PushNotifications.addListener('pushNotificationReceived', (notification) => {
+          toast.success(notification.title || 'Yeni Bildirim', {
+            description: notification.body
+          });
+        });
+      }
+    }).catch(() => {
+      // Ignore if not running in native Capacitor environment
+    });
   }, []);
 
   useEffect(() => {

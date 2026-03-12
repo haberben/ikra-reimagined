@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "202453719504",
+    "project_id": "ikra-reimagined",
+    "storage_bucket": "ikra-reimagined.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:202453719504:android:9308e996cafe3437a441d5",
+        "android_client_info": {
+          "package_name": "com.ikra.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAcfnAT-yHrJ2iIQtLINGN45Op4swfefuw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export function useFavorites() {
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
@@ -20,14 +21,19 @@ export function useFavorites() {
   }, []);
 
   const toggleFavorite = useCallback(async (itemId: string, itemType: string) => {
-    if (!userId) return false;
+    if (!userId) {
+      toast.error("Favorilere eklemek için lütfen giriş yapın");
+      return false;
+    }
     const isFav = favoriteIds.has(itemId);
     if (isFav) {
       await supabase.from("favorites").delete().eq("user_id", userId).eq("item_id", itemId);
       setFavoriteIds(prev => { const s = new Set(prev); s.delete(itemId); return s; });
+      toast.success("Favorilerden çıkarıldı");
     } else {
       await supabase.from("favorites").insert({ user_id: userId, item_id: itemId, item_type: itemType });
       setFavoriteIds(prev => new Set(prev).add(itemId));
+      toast.success("Favorilere eklendi");
     }
     return !isFav;
   }, [userId, favoriteIds]);

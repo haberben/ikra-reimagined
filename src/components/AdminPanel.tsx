@@ -379,11 +379,35 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
   const handleSendNotification = async () => {
     if (!notifTitle.trim() || !notifBody.trim()) return;
     setNotifSaving(true);
+    
+    // 1. Save to database
     await supabase.from("notifications").insert({
       title: notifTitle.trim(), body: notifBody.trim(),
       image_url: notifImage.trim() || null, video_url: notifVideo.trim() || null,
       created_by_user_id: currentUserId,
     } as any);
+
+    // 2. Trigger the Push Notification Edge Function
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-push-notification`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
+          },
+          body: JSON.stringify({
+            title: notifTitle.trim(),
+            body: notifBody.trim(),
+            imageUrl: notifImage.trim() || null
+          })
+        });
+      }
+    } catch (e) {
+      console.error("Failed to send push notification:", e);
+    }
+
     setNotifTitle(""); setNotifBody(""); setNotifImage(""); setNotifVideo("");
     fetchNotifications();
     setNotifSaving(false);
