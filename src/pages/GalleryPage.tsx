@@ -21,6 +21,8 @@ interface GalleryPageProps {
   onMenuOpen: () => void;
 }
 
+const isNative = () => !!(window as any).Capacitor?.isNativePlatform?.();
+
 export default function GalleryPage({ onNotifications, onMenuOpen }: GalleryPageProps) {
   const [activeCategory, setActiveCategory] = useState("Tümü");
   const [search, setSearch] = useState("");
@@ -33,39 +35,48 @@ export default function GalleryPage({ onNotifications, onMenuOpen }: GalleryPage
     if (downloading) return;
     setDownloading(id);
     try {
-      const response = await fetch(imageUrl);
+      const response = await fetch(imageUrl, { mode: "cors" });
       if (!response.ok) throw new Error("Görsel indirilemedi");
       const blob = await response.blob();
       const fileName = `ikra-wallpaper-${id.slice(0, 8)}.jpg`;
 
-      // Check if running in Capacitor (native app)
-      const isNative = !!(window as any).Capacitor?.isNativePlatform?.();
-
-      if (isNative) {
-        // Convert blob to base64 for native file system
-        const reader = new FileReader();
-        reader.onloadend = async () => {
-          try {
-            const base64Data = (reader.result as string).split(",")[1];
-            const { Filesystem, Directory } = await import("@capacitor/filesystem");
-            await Filesystem.writeFile({
-              path: fileName,
-              data: base64Data,
-              directory: Directory.Documents,
+      if (isNative()) {
+        // Native: Use Web Share API with File for saving to gallery
+        try {
+          const file = new File([blob], fileName, { type: blob.type || "image/jpeg" });
+          if (navigator.share && navigator.canShare?.({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: "İKRA Duvar Kağıdı",
             });
-            toast.success("Görsel kaydedildi!", { description: "Belgeler klasörüne kaydedildi" });
-          } catch (e) {
-            // Fallback: open image in new tab for manual save
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = fileName;
-            a.click();
-            URL.revokeObjectURL(url);
-            toast.success("Görsel indiriliyor");
+            toast.success("Görsel paylaşıldı!");
+          } else {
+            // Fallback: save with Filesystem + notify
+            const { Filesystem, Directory } = await import("@capacitor/filesystem");
+            const reader = new FileReader();
+            const base64Promise = new Promise<string>((resolve) => {
+              reader.onloadend = () => resolve((reader.result as string).split(",")[1]);
+              reader.readAsDataURL(blob);
+            });
+            const base64Data = await base64Promise;
+            const result = await Filesystem.writeFile({
+              path: `Download/${fileName}`,
+              data: base64Data,
+              directory: Directory.ExternalStorage,
+              recursive: true,
+            });
+            toast.success("Görsel kaydedildi!", { description: "İndirilenler klasörüne kaydedildi" });
           }
-        };
-        reader.readAsDataURL(blob);
+        } catch (e: any) {
+          // User cancelled share or filesystem error - try final fallback
+          if (e?.message?.includes("canceled") || e?.message?.includes("abort")) {
+            // User cancelled, no error
+          } else {
+            // Last resort: open in browser
+            window.open(imageUrl, "_blank");
+            toast.info("Görseli uzun basarak kaydedebilirsiniz");
+          }
+        }
       } else {
         // Web: standard download
         const url = URL.createObjectURL(blob);
@@ -174,7 +185,6 @@ export default function GalleryPage({ onNotifications, onMenuOpen }: GalleryPage
                       </span>
                     </button>
                   </div>
-                  {/* Contributor credit */}
                   {w.contributor_name && (
                     <div className="absolute bottom-2 left-2 right-2">
                       <div className="flex items-center gap-1 rounded-full bg-black/40 backdrop-blur-sm px-2.5 py-1">

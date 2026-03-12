@@ -7,7 +7,6 @@ import {
   getNotificationPermission,
   schedulePrayerNotifications,
   scheduleDailyContentNotification,
-  cancelScheduledNotification,
 } from "@/lib/notifications";
 
 const PRAYERS = [
@@ -30,6 +29,7 @@ interface Notification {
 }
 
 export default function NotificationsPage({ onBack }: { onBack: () => void }) {
+  // Use shared localStorage keys with PrayerTimesPage
   const [notifications, setNotifications] = useState<Record<string, boolean>>(() => {
     try { return JSON.parse(localStorage.getItem("ikra_notif_toggles") || "{}"); } catch { return {}; }
   });
@@ -43,40 +43,25 @@ export default function NotificationsPage({ onBack }: { onBack: () => void }) {
   const [expandedNotif, setExpandedNotif] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [permissionStatus, setPermissionStatus] = useState<string>(getNotificationPermission());
-  const [scheduledTimers, setScheduledTimers] = useState<number[]>([]);
 
   useEffect(() => {
     fetchAdminNotifs();
   }, []);
 
-  // Persist to localStorage
+  // Persist and schedule prayer notifications when toggles change
   useEffect(() => {
     localStorage.setItem("ikra_notif_toggles", JSON.stringify(notifications));
-  }, [notifications]);
-
-  useEffect(() => {
     localStorage.setItem("ikra_notif_times", JSON.stringify(notifTimes));
-  }, [notifTimes]);
 
-  useEffect(() => {
-    localStorage.setItem("ikra_daily_notif_toggles", JSON.stringify(dailyNotifs));
-  }, [dailyNotifs]);
-
-  // Schedule prayer notifications when toggles change
-  useEffect(() => {
-    // Clear existing timers
-    for (const t of scheduledTimers) {
-      cancelScheduledNotification(t);
-    }
+    const hasAnyEnabled = Object.values(notifications).some(Boolean);
+    if (!hasAnyEnabled) return;
 
     const city = localStorage.getItem("ikra_city") || "İstanbul";
-    // Fetch prayer times and schedule
     fetch(`https://api.aladhan.com/v1/timingsByCity?city=${encodeURIComponent(city)}&country=TR&method=13`)
       .then(r => r.json())
       .then(async (data) => {
         if (data.code === 200) {
-          const timers = await schedulePrayerNotifications(data.data.timings, notifications, notifTimes);
-          setScheduledTimers(timers);
+          await schedulePrayerNotifications(data.data.timings, notifications, notifTimes);
         }
       })
       .catch(console.error);
@@ -84,11 +69,12 @@ export default function NotificationsPage({ onBack }: { onBack: () => void }) {
 
   // Schedule daily content notifications
   useEffect(() => {
+    localStorage.setItem("ikra_daily_notif_toggles", JSON.stringify(dailyNotifs));
     if (dailyNotifs.ayet) {
-      scheduleDailyContentNotification('ayet', 7, 0); // 07:00
+      scheduleDailyContentNotification('ayet', 7, 0);
     }
     if (dailyNotifs.hadis) {
-      scheduleDailyContentNotification('hadis', 8, 0); // 08:00
+      scheduleDailyContentNotification('hadis', 8, 0);
     }
   }, [dailyNotifs]);
 
@@ -112,26 +98,24 @@ export default function NotificationsPage({ onBack }: { onBack: () => void }) {
     setPermissionStatus(granted ? 'granted' : 'denied');
   };
 
-  const handleToggleNotif = (key: string) => {
+  const handleToggleNotif = async (key: string) => {
     const newVal = !notifications[key];
     if (newVal && permissionStatus !== 'granted') {
-      handleRequestPermission().then(() => {
-        setNotifications({ ...notifications, [key]: true });
-      });
-    } else {
-      setNotifications({ ...notifications, [key]: newVal });
+      const granted = await requestNotificationPermission();
+      setPermissionStatus(granted ? 'granted' : 'denied');
+      if (!granted) return;
     }
+    setNotifications({ ...notifications, [key]: newVal });
   };
 
-  const handleToggleDailyNotif = (key: string) => {
+  const handleToggleDailyNotif = async (key: string) => {
     const newVal = !dailyNotifs[key];
     if (newVal && permissionStatus !== 'granted') {
-      handleRequestPermission().then(() => {
-        setDailyNotifs({ ...dailyNotifs, [key]: true });
-      });
-    } else {
-      setDailyNotifs({ ...dailyNotifs, [key]: newVal });
+      const granted = await requestNotificationPermission();
+      setPermissionStatus(granted ? 'granted' : 'denied');
+      if (!granted) return;
     }
+    setDailyNotifs({ ...dailyNotifs, [key]: newVal });
   };
 
   return (
@@ -304,7 +288,6 @@ export default function NotificationsPage({ onBack }: { onBack: () => void }) {
                         </div>
                       )}
 
-                      {/* Copy button */}
                       <button
                         onClick={() => handleCopy(
                           `${n.title}\n\n${n.body}${n.image_url ? `\n\n${n.image_url}` : ""}${n.video_url ? `\n\n${n.video_url}` : ""}`,

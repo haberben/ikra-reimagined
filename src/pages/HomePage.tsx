@@ -17,6 +17,21 @@ const PRAYER_LABELS: Record<string, string> = {
   Asr: "İkindi", Maghrib: "Akşam", Isha: "Yatsı",
 };
 
+const HIJRI_MONTHS_TR: Record<string, string> = {
+  "Muḥarram": "Muharrem",
+  "Ṣafar": "Safer",
+  "Rabīʿ al-Awwal": "Rebiülevvel",
+  "Rabīʿ al-Thānī": "Rebiülahir",
+  "Jumādá al-Ūlá": "Cemaziyelevvel",
+  "Jumādá al-Ākhirah": "Cemaziyelahir",
+  "Rajab": "Recep",
+  "Shaʿbān": "Şaban",
+  "Ramaḍān": "Ramazan",
+  "Shawwāl": "Şevval",
+  "Dhū al-Qaʿdah": "Zilkade",
+  "Dhū al-Ḥijjah": "Zilhicce",
+};
+
 const DISCOVER_ITEMS = [
   { icon: "auto_stories", label: "Hatim", action: "tab:hatim" },
   { icon: "wallpaper", label: "Duvar Kağıdı", action: "tab:gallery" },
@@ -29,6 +44,8 @@ export default function HomePage({ city, onNavigate, onNotifications, onZikirmat
   const { current, next, remaining, progress } = useCurrentPrayer(times);
   const { ayet, hadis } = useDailyContent();
   const { toggleFavorite, isFavorite } = useFavorites();
+
+  const hijriMonthTr = hijri ? (HIJRI_MONTHS_TR[hijri.month.en] || hijri.month.en) : "";
 
   const miniPrayers = times
     ? [
@@ -57,6 +74,9 @@ export default function HomePage({ city, onNavigate, onNotifications, onZikirmat
             <span className="text-xs text-primary-foreground/70">Bugün</span>
             <p className="text-sm font-medium text-primary-foreground">
               {hijri.day} {hijri.month.ar} {hijri.year}
+            </p>
+            <p className="text-xs text-primary-foreground/60 mt-0.5">
+              {hijri.day} {hijriMonthTr} {hijri.year}
             </p>
           </div>
         )}
