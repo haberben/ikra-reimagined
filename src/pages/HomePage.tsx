@@ -3,6 +3,27 @@ import { useDailyContent } from "@/hooks/useDailyContent";
 import { useFavorites } from "@/hooks/useFavorites";
 import StickyHeader from "@/components/layout/StickyHeader";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+
+async function shareContent(type: string, arabicText: string, turkishText: string, source?: string) {
+  const label = type === "ayet" ? "📖 Günün Ayeti" : "📿 Günün Hadisi";
+  let text = `${label}\n\n${arabicText}\n\n"${turkishText}"`;
+  if (source) text += `\n\n— ${source}`;
+  text += "\n\n🕌 İKRA Uygulaması";
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: label, text });
+      return;
+    } catch { /* cancelled */ }
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    toast.success("Panoya kopyalandı");
+  } catch {
+    toast.error("Paylaşım başarısız oldu");
+  }
+}
 
 interface HomePageProps {
   city: string;
