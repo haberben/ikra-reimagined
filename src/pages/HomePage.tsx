@@ -3,6 +3,27 @@ import { useDailyContent } from "@/hooks/useDailyContent";
 import { useFavorites } from "@/hooks/useFavorites";
 import StickyHeader from "@/components/layout/StickyHeader";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+
+async function shareContent(type: string, arabicText: string, turkishText: string, source?: string) {
+  const label = type === "ayet" ? "📖 Günün Ayeti" : "📿 Günün Hadisi";
+  let text = `${label}\n\n${arabicText}\n\n"${turkishText}"`;
+  if (source) text += `\n\n— ${source}`;
+  text += "\n\n🕌 İKRA Uygulaması";
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: label, text });
+      return;
+    } catch { /* cancelled */ }
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    toast.success("Panoya kopyalandı");
+  } catch {
+    toast.error("Paylaşım başarısız oldu");
+  }
+}
 
 interface HomePageProps {
   city: string;
@@ -150,7 +171,10 @@ export default function HomePage({ city, onNavigate, onNotifications, onZikirmat
           <div className="mt-3 flex items-center justify-between">
             <span className="text-xs text-primary/60">{ayet?.source || "İnşirah Suresi, 6"}</span>
             <div className="flex gap-2">
-              <button className="p-1 text-muted-foreground hover:text-primary">
+              <button
+                onClick={() => ayet && shareContent("ayet", ayet.arabic_text, ayet.turkish_text, ayet.source || undefined)}
+                className="p-1 text-muted-foreground hover:text-primary"
+              >
                 <span className="material-symbols-outlined text-[20px]">share</span>
               </button>
               <button
@@ -162,6 +186,7 @@ export default function HomePage({ city, onNavigate, onNotifications, onZikirmat
                   style={ayet && isFavorite(ayet.id) ? { fontVariationSettings: "'FILL' 1" } : {}}
                 >favorite</span>
               </button>
+            </div>
           </div>
           {ayet?.contributor_name && (
             <div className="mt-2 flex items-center gap-1">
@@ -170,7 +195,6 @@ export default function HomePage({ city, onNavigate, onNotifications, onZikirmat
             </div>
           )}
         </div>
-      </div>
       </div>
 
       {/* Günün Hadisi */}
@@ -187,15 +211,23 @@ export default function HomePage({ city, onNavigate, onNotifications, onZikirmat
           </p>
           <div className="mt-2 flex items-center justify-between">
             <p className="text-xs text-accent/60">{hadis?.source || "Buhârî"}</p>
-            <button
-              onClick={() => hadis ? toggleFavorite(hadis.id, "hadis") : null}
-              className="p-1 text-muted-foreground hover:text-accent"
-            >
-              <span
-                className={cn("material-symbols-outlined text-[20px]", hadis && isFavorite(hadis.id) && "text-destructive")}
-                style={hadis && isFavorite(hadis.id) ? { fontVariationSettings: "'FILL' 1" } : {}}
-              >favorite</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => hadis && shareContent("hadis", hadis.arabic_text, hadis.turkish_text, hadis.source || undefined)}
+                className="p-1 text-muted-foreground hover:text-accent"
+              >
+                <span className="material-symbols-outlined text-[20px]">share</span>
+              </button>
+              <button
+                onClick={() => hadis ? toggleFavorite(hadis.id, "hadis") : null}
+                className="p-1 text-muted-foreground hover:text-accent"
+              >
+                <span
+                  className={cn("material-symbols-outlined text-[20px]", hadis && isFavorite(hadis.id) && "text-destructive")}
+                  style={hadis && isFavorite(hadis.id) ? { fontVariationSettings: "'FILL' 1" } : {}}
+                >favorite</span>
+              </button>
+            </div>
           </div>
           {hadis?.contributor_name && (
             <div className="mt-2 flex items-center gap-1">

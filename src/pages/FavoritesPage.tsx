@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import StickyHeader from "@/components/layout/StickyHeader";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 const CATEGORIES = [
   { key: "all", label: "Tümü", icon: "favorite" },
@@ -16,11 +17,84 @@ interface FavoritesPageProps {
   onMenuOpen: () => void;
 }
 
+const isNative = () => !!(window as any).Capacitor?.isNativePlatform?.();
+
+async function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result as string;
+      resolve(result.split(",")[1]);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function downloadImage(imageUrl: string, id: string) {
+  try {
+    const fileName = `ikra-wallpaper-${id.slice(0, 8)}.jpg`;
+    const response = await fetch(imageUrl, { mode: "cors" });
+    if (!response.ok) throw new Error("Görsel indirilemedi");
+    const blob = await response.blob();
+
+    if (isNative()) {
+      const { Filesystem, Directory } = await import("@capacitor/filesystem");
+      const base64Data = await blobToBase64(blob);
+      try {
+        await Filesystem.writeFile({ path: fileName, data: base64Data, directory: Directory.Documents, recursive: true });
+        toast.success("Görsel kaydedildi!", { description: "Belgeler klasörüne kaydedildi" });
+      } catch {
+        const file = new File([blob], fileName, { type: "image/jpeg" });
+        if (navigator.share && navigator.canShare?.({ files: [file] })) {
+          await navigator.share({ files: [file], title: "İKRA Duvar Kağıdı" });
+          toast.success("Görsel paylaşıldı!");
+        }
+      }
+    } else {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Görsel indiriliyor");
+    }
+  } catch (err) {
+    console.error("Download error:", err);
+    toast.error("İndirme başarısız oldu");
+  }
+}
+
+async function shareContent(type: string, arabicText: string, turkishText: string, source?: string) {
+  const label = type === "ayet" ? "📖 Günün Ayeti" : "📿 Günün Hadisi";
+  let text = `${label}\n\n${arabicText}\n\n"${turkishText}"`;
+  if (source) text += `\n\n— ${source}`;
+  text += "\n\n🕌 İKRA Uygulaması";
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: label, text });
+      return;
+    } catch { /* cancelled */ }
+  }
+  // Fallback: copy to clipboard
+  try {
+    await navigator.clipboard.writeText(text);
+    toast.success("Panoya kopyalandı");
+  } catch {
+    toast.error("Paylaşım başarısız oldu");
+  }
+}
+
 export default function FavoritesPage({ onNotifications, onMenuOpen }: FavoritesPageProps) {
   const [activeCategory, setActiveCategory] = useState("all");
   const [favorites, setFavorites] = useState<any[]>([]);
   const [items, setItems] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState<string | null>(null);
 
   useEffect(() => {
     loadFavorites();
@@ -40,7 +114,6 @@ export default function FavoritesPage({ onNotifications, onMenuOpen }: Favorites
     if (!favs || favs.length === 0) { setFavorites([]); setLoading(false); return; }
     setFavorites(favs);
 
-    // Load referenced items
     const wallpaperIds = favs.filter(f => f.item_type === "wallpaper").map(f => f.item_id);
     const ayetIds = favs.filter(f => f.item_type === "ayet").map(f => f.item_id);
     const hadisIds = favs.filter(f => f.item_type === "hadis").map(f => f.item_id);
@@ -70,6 +143,13 @@ export default function FavoritesPage({ onNotifications, onMenuOpen }: Favorites
     setFavorites(prev => prev.filter(f => f.id !== favId));
   };
 
+  const handleDownload = useCallback(async (imageUrl: string, id: string) => {
+    if (downloading) return;
+    setDownloading(id);
+    await downloadImage(imageUrl, id);
+    setDownloading(null);
+  }, [downloading]);
+
   const filtered = activeCategory === "all"
     ? favorites
     : favorites.filter(f => f.item_type === activeCategory);
@@ -81,19 +161,32 @@ export default function FavoritesPage({ onNotifications, onMenuOpen }: Favorites
     if (item._type === "wallpaper") {
       return (
         <div className="relative aspect-[9/16] overflow-hidden rounded-xl bg-muted">
-          <img src={item.image_url} alt={item.turkish_text || item.category} className="absolute inset-0 h-full w-full object-cover" />
-          {(item.arabic_text || item.turkish_text) && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-3 bg-black/30">
-              {item.arabic_text && <p className="font-arabic text-sm text-center text-white" dir="rtl">{item.arabic_text}</p>}
-              {item.turkish_text && <p className="mt-1 text-center text-[8px] uppercase tracking-widest text-white/80">{item.turkish_text}</p>}
+          <img src={item.image_url} alt={item.category} className="absolute inset-0 h-full w-full object-cover" />
+          <div className="absolute right-2 top-2 flex gap-1.5">
+            <button
+              onClick={() => removeFavorite(fav.id)}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-black/30 backdrop-blur"
+            >
+              <span className="material-symbols-outlined text-red-400 text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
+            </button>
+            <button
+              onClick={() => handleDownload(item.image_url, item.id)}
+              disabled={downloading === item.id}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-black/30 backdrop-blur"
+            >
+              <span className={cn("material-symbols-outlined text-white text-[16px]", downloading === item.id && "animate-spin")}>
+                {downloading === item.id ? "progress_activity" : "download"}
+              </span>
+            </button>
+          </div>
+          {item.contributor_name && (
+            <div className="absolute bottom-2 left-2 right-2">
+              <div className="flex items-center gap-1 rounded-full bg-black/40 backdrop-blur-sm px-2.5 py-1">
+                <span className="material-symbols-outlined text-[12px] text-red-400" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
+                <span className="text-[9px] text-white/90 font-medium truncate">{item.contributor_name} katkısıyla</span>
+              </div>
             </div>
           )}
-          <button
-            onClick={() => removeFavorite(fav.id)}
-            className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/30 backdrop-blur"
-          >
-            <span className="material-symbols-outlined text-red-400 text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
-          </button>
         </div>
       );
     }
@@ -108,9 +201,17 @@ export default function FavoritesPage({ onNotifications, onMenuOpen }: Favorites
             )}>
               {item._type === "ayet" ? "Ayet" : "Hadis"}
             </span>
-            <button onClick={() => removeFavorite(fav.id)} className="text-red-400">
-              <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => shareContent(item._type, item.arabic_text, item.turkish_text, item.source)}
+                className="p-1 text-muted-foreground hover:text-primary"
+              >
+                <span className="material-symbols-outlined text-[18px]">share</span>
+              </button>
+              <button onClick={() => removeFavorite(fav.id)} className="text-red-400">
+                <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
+              </button>
+            </div>
           </div>
           <p className="font-arabic text-lg leading-relaxed text-foreground" dir="rtl">{item.arabic_text}</p>
           <p className="mt-2 text-sm italic text-muted-foreground">"{item.turkish_text}"</p>
