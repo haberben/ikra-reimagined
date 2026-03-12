@@ -23,3 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 ezan.flac
+
+# Sensitive files
+android/app/google-services.json
