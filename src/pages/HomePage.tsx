@@ -196,7 +196,6 @@ export default function HomePage({ city, onNavigate, onNotifications, onZikirmat
           )}
         </div>
       </div>
-      </div>
 
       {/* Günün Hadisi */}
       <div className="mt-4 px-4">
