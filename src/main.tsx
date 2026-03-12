@@ -1,6 +1,8 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import App from "./App.tsx";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage.tsx";
 import "./index.css";
 
 // Register service worker (only in production / non-preview)
