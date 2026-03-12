@@ -221,9 +221,12 @@ export async function schedulePrayerNotifications(
 
       // Append ayet/hadis content
       if (content) {
-        const label = content.type === 'ayet' ? '📖 Ayet' : '📿 Hadis';
+        let label = content.type === 'ayet' ? '📖 Ayet' : '📿 Hadis';
         bodyText += `\n\n${label}: "${content.turkish_text}"`;
         if (content.source) bodyText += ` — ${content.source}`;
+      } else {
+         // Fallback default content if fetch fails so there's always something
+         bodyText += `\n\n📖 Ayet: "Şüphesiz zorlukla beraber bir kolaylık vardır." — İnşirah, 5`;
       }
 
       const id = await scheduleLocalNotification(
