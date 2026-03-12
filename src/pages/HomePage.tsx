@@ -228,6 +228,7 @@ export default function HomePage({ city, onNavigate, onNotifications, onZikirmat
                 >favorite</span>
               </button>
             </div>
+          </div>
           {hadis?.contributor_name && (
             <div className="mt-2 flex items-center gap-1">
               <span className="material-symbols-outlined text-[12px] text-red-400" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
