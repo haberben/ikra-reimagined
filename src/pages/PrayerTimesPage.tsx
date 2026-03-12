@@ -174,7 +174,7 @@ export default function PrayerTimesPage({ city, setCity, onNotifications, onMenu
     localStorage.setItem("ikra_notif_toggles", JSON.stringify(notifications));
     localStorage.setItem("ikra_notif_times", JSON.stringify(notifTimes));
 
-    schedulePrayerNotifications(times, notifications, notifTimes);
+    schedulePrayerNotifications(times as unknown as Record<string, string>, notifications, notifTimes);
   }, [notifications, notifTimes, times]);
 
   const handleToggleNotif = async (key: string) => {
