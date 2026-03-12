@@ -171,7 +171,10 @@ export default function HomePage({ city, onNavigate, onNotifications, onZikirmat
           <div className="mt-3 flex items-center justify-between">
             <span className="text-xs text-primary/60">{ayet?.source || "İnşirah Suresi, 6"}</span>
             <div className="flex gap-2">
-              <button className="p-1 text-muted-foreground hover:text-primary">
+              <button
+                onClick={() => ayet && shareContent("ayet", ayet.arabic_text, ayet.turkish_text, ayet.source || undefined)}
+                className="p-1 text-muted-foreground hover:text-primary"
+              >
                 <span className="material-symbols-outlined text-[20px]">share</span>
               </button>
               <button
