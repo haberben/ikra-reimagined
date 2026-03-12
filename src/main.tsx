@@ -1,6 +1,8 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import App from "./App.tsx";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage.tsx";
 import "./index.css";
 
 // Register service worker (only in production / non-preview)
@@ -40,6 +42,11 @@ if ('serviceWorker' in navigator && !window.location.hostname.includes('lovable.
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <App />
+    <BrowserRouter>
+      <Routes>
+        <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+        <Route path="*" element={<App />} />
+      </Routes>
+    </BrowserRouter>
   </React.StrictMode>
 );
