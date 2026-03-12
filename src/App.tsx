@@ -1,9 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import BottomNav from "@/components/layout/BottomNav";
 import InstallPrompt from "@/components/InstallPrompt";
 import MenuDrawer from "@/components/layout/MenuDrawer";
+import { useBackButton } from "@/hooks/useBackButton";
+import { requestAllPermissions } from "@/lib/permissions";
 
 import Onboarding from "@/pages/Onboarding";
 import HomePage from "@/pages/HomePage";
@@ -32,6 +34,11 @@ const App = () => {
   const [pageTransition, setPageTransition] = useState(false);
   const [dark, setDark] = useState(() => localStorage.getItem("ikra_theme") === "dark");
 
+  // Request permissions on first launch
+  useEffect(() => {
+    requestAllPermissions();
+  }, []);
+
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
     localStorage.setItem("ikra_theme", dark ? "dark" : "light");
@@ -46,30 +53,30 @@ const App = () => {
     setTimeout(() => setShowNotifications(true), 50);
   };
 
-  const handleNotificationsBack = () => {
+  const handleNotificationsBack = useCallback(() => {
     setPageTransition(false);
     setTimeout(() => setShowNotifications(false), 300);
-  };
+  }, []);
 
   const handleZikirmatik = () => {
     setPageTransition(true);
     setTimeout(() => setShowZikirmatik(true), 50);
   };
 
-  const handleZikirmatikBack = () => {
+  const handleZikirmatikBack = useCallback(() => {
     setPageTransition(false);
     setTimeout(() => setShowZikirmatik(false), 300);
-  };
+  }, []);
 
   const handleSuggestions = () => {
     setPageTransition(true);
     setTimeout(() => setShowSuggestions(true), 50);
   };
 
-  const handleSuggestionsBack = () => {
+  const handleSuggestionsBack = useCallback(() => {
     setPageTransition(false);
     setTimeout(() => setShowSuggestions(false), 300);
-  };
+  }, []);
 
   const handleMenuNavigate = (target: string) => {
     setShowMenu(false);
@@ -79,6 +86,28 @@ const App = () => {
     else if (target === "admin") setShowAdmin(true);
     else setActiveTab(target);
   };
+
+  // Android hardware back button handling
+  const handleBackButton = useCallback(() => {
+    if (showAdmin) {
+      setShowAdmin(false);
+    } else if (showMenu) {
+      setShowMenu(false);
+    } else if (showNotifications) {
+      handleNotificationsBack();
+    } else if (showZikirmatik) {
+      handleZikirmatikBack();
+    } else if (showSuggestions) {
+      handleSuggestionsBack();
+    } else if (activeTab !== "home") {
+      setActiveTab("home");
+    } else {
+      // On home tab, minimize app
+      import("@capacitor/app").then(({ App }) => App.minimizeApp()).catch(() => {});
+    }
+  }, [showAdmin, showMenu, showNotifications, showZikirmatik, showSuggestions, activeTab, handleNotificationsBack, handleZikirmatikBack, handleSuggestionsBack]);
+
+  useBackButton(handleBackButton, onboarded);
 
   if (!onboarded) {
     return (
