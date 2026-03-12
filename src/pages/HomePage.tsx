@@ -186,6 +186,7 @@ export default function HomePage({ city, onNavigate, onNotifications, onZikirmat
                   style={ayet && isFavorite(ayet.id) ? { fontVariationSettings: "'FILL' 1" } : {}}
                 >favorite</span>
               </button>
+            </div>
           </div>
           {ayet?.contributor_name && (
             <div className="mt-2 flex items-center gap-1">
