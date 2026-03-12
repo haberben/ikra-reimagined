@@ -7,6 +7,9 @@ import {
   getNotificationPermission,
   schedulePrayerNotifications,
   scheduleDailyContentNotification,
+  getNotifSoundPref,
+  setNotifSoundPref,
+  type NotifSound,
 } from "@/lib/notifications";
 
 const PRAYERS = [
@@ -19,6 +22,12 @@ const PRAYERS = [
 
 const TIME_OPTIONS = ["Vakitte", "5 dk önce", "10 dk önce", "15 dk önce", "30 dk önce"];
 
+const SOUND_OPTIONS: { value: NotifSound; label: string; icon: string }[] = [
+  { value: "default", label: "Varsayılan", icon: "notifications_active" },
+  { value: "ezan", label: "Ezan Sesi", icon: "mosque" },
+  { value: "silent", label: "Sessiz", icon: "notifications_off" },
+];
+
 interface Notification {
   id: string;
   title: string;
@@ -29,7 +38,6 @@ interface Notification {
 }
 
 export default function NotificationsPage({ onBack }: { onBack: () => void }) {
-  // Use shared localStorage keys with PrayerTimesPage
   const [notifications, setNotifications] = useState<Record<string, boolean>>(() => {
     try { return JSON.parse(localStorage.getItem("ikra_notif_toggles") || "{}"); } catch { return {}; }
   });
@@ -39,6 +47,7 @@ export default function NotificationsPage({ onBack }: { onBack: () => void }) {
   const [dailyNotifs, setDailyNotifs] = useState<Record<string, boolean>>(() => {
     try { return JSON.parse(localStorage.getItem("ikra_daily_notif_toggles") || "{}"); } catch { return {}; }
   });
+  const [selectedSound, setSelectedSound] = useState<NotifSound>(getNotifSoundPref());
   const [adminNotifs, setAdminNotifs] = useState<Notification[]>([]);
   const [expandedNotif, setExpandedNotif] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
@@ -118,6 +127,11 @@ export default function NotificationsPage({ onBack }: { onBack: () => void }) {
     setDailyNotifs({ ...dailyNotifs, [key]: newVal });
   };
 
+  const handleSoundChange = (sound: NotifSound) => {
+    setSelectedSound(sound);
+    setNotifSoundPref(sound);
+  };
+
   return (
     <div className="pb-20">
       <StickyHeader
@@ -146,6 +160,28 @@ export default function NotificationsPage({ onBack }: { onBack: () => void }) {
             Bildirimlere İzin Ver
           </button>
         )}
+
+        {/* Bildirim Sesi Seçimi */}
+        <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary">
+          Bildirim Sesi
+        </h3>
+        <div className="flex gap-2 mb-6">
+          {SOUND_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => handleSoundChange(opt.value)}
+              className={cn(
+                "flex-1 flex flex-col items-center gap-1.5 rounded-xl border px-3 py-3 transition-all",
+                selectedSound === opt.value
+                  ? "border-primary bg-primary/10 text-primary shadow-sm"
+                  : "border-primary/10 bg-card text-muted-foreground"
+              )}
+            >
+              <span className="material-symbols-outlined text-[22px]">{opt.icon}</span>
+              <span className="text-[11px] font-semibold">{opt.label}</span>
+            </button>
+          ))}
+        </div>
 
         {/* Namaz Hatırlatıcıları */}
         <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary">
