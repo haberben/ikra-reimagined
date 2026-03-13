@@ -141,33 +141,23 @@ async function cancelAllNativeNotifications() {
   }
 }
 
-// Fetch a random ayet or hadis from daily_content
-async function fetchRandomContent(): Promise<{ turkish_text: string; source: string | null; type: string } | null> {
+// Fetch multiple random ayets or hadiths from daily_content
+async function fetchMultipleContent(count: number): Promise<{ turkish_text: string; source: string | null; type: string }[]> {
   try {
-    const today = new Date().toISOString().split('T')[0];
-    const { data: todayData } = await supabase
-      .from('daily_content')
-      .select('turkish_text, source, type')
-      .eq('date', today)
-      .limit(2);
-
-    if (todayData && todayData.length > 0) {
-      return todayData[Math.floor(Math.random() * todayData.length)];
-    }
-
     const { data: allData } = await supabase
       .from('daily_content')
       .select('turkish_text, source, type')
       .order('date', { ascending: false })
-      .limit(10);
+      .limit(30);
 
     if (allData && allData.length > 0) {
-      return allData[Math.floor(Math.random() * allData.length)];
+      // Shuffle the array and return the requested number of items
+      const shuffled = allData.sort(() => 0.5 - Math.random());
+      return shuffled.slice(0, count);
     }
-
-    return null;
+    return [];
   } catch {
-    return null;
+    return [];
   }
 }
 
@@ -192,8 +182,9 @@ export async function schedulePrayerNotifications(
     Isha: 'Yatsı',
   };
 
-  // Pre-fetch content for notifications
-  const content = await fetchRandomContent();
+  // Pre-fetch multiple contents to ensure variety across the 5 prayers
+  const contents = await fetchMultipleContent(5);
+  let contentIndex = 0;
 
   for (const [key, enabled] of Object.entries(toggles)) {
     if (!enabled || !times[key]) continue;
@@ -215,19 +206,26 @@ export async function schedulePrayerNotifications(
 
     if (delay > 0) {
       const name = PRAYER_NAMES[key] || key;
-      let bodyText = offsetMinutes > 0
-        ? `${name} namazına ${offsetMinutes} dakika kaldı`
-        : `${name} namazı vakti girdi`;
+      let bodyText = "";
 
-      // Append ayet/hadis content
-      if (content) {
-        let label = content.type === 'ayet' ? '📖 Ayet' : '📿 Hadis';
-        bodyText += `\n\n${label}: "${content.turkish_text}"`;
-        if (content.source) bodyText += ` — ${content.source}`;
+      // Get a unique content for this specific prayer
+      const currentContent = contents[contentIndex % contents.length];
+      contentIndex++;
+
+      // Ayet/hadis content first
+      if (currentContent) {
+        let label = currentContent.type === 'ayet' ? '📖 Ayet' : '📿 Hadis';
+        bodyText += `${label}: "${currentContent.turkish_text}"`;
+        if (currentContent.source) bodyText += ` — ${currentContent.source}`;
+        bodyText += "\n\n";
       } else {
-         // Fallback default content if fetch fails so there's always something
-         bodyText += `\n\n📖 Ayet: "Şüphesiz zorlukla beraber bir kolaylık vardır." — İnşirah, 5`;
+         bodyText += `📖 Ayet: "Şüphesiz zorlukla beraber bir kolaylık vardır." — İnşirah, 5\n\n`;
       }
+
+      // Time offset second
+      bodyText += offsetMinutes > 0
+        ? `📍 ${name} vaktine ${offsetMinutes} dakika kaldı.`
+        : `📍 ${name} vakti girdi.`;
 
       const id = await scheduleLocalNotification(
         `🕌 ${name} Vakti`,

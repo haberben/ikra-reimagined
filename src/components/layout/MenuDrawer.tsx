@@ -6,9 +6,11 @@ interface MenuDrawerProps {
   onNavigate: (target: string) => void;
   city: string;
   userName: string;
+  isLoggedIn?: boolean;
   dark?: boolean;
   onToggleDark?: () => void;
 }
+import { supabase } from "@/integrations/supabase/client";
 
 const MENU_ITEMS = [
   { icon: "home", label: "Ana Sayfa", target: "home" },
@@ -23,7 +25,7 @@ const MENU_ITEMS = [
   { icon: "explore", label: "Kıble Bulucu", target: "times" },
 ];
 
-export default function MenuDrawer({ open, onClose, onNavigate, city, userName, dark, onToggleDark }: MenuDrawerProps) {
+export default function MenuDrawer({ open, onClose, onNavigate, city, userName, isLoggedIn, dark, onToggleDark }: MenuDrawerProps) {
   if (!open) return null;
 
   return (
@@ -35,17 +37,23 @@ export default function MenuDrawer({ open, onClose, onNavigate, city, userName, 
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="islamic-pattern bg-primary p-6 pb-8">
+        {/* Header - Clickable for Profile/Login */}
+        <button
+          onClick={() => onNavigate("profile")}
+          className="w-full text-left islamic-pattern bg-primary p-6 pb-8 transition-colors hover:bg-primary/90"
+        >
           <div className="flex items-center gap-3">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary-foreground/20">
-              <span className="material-symbols-outlined text-primary-foreground text-[28px]">person</span>
+              <span className="material-symbols-outlined text-primary-foreground text-[28px]">
+                {isLoggedIn ? "person" : "account_circle"}
+              </span>
             </div>
             <div>
               <p className="text-lg font-bold text-primary-foreground">{userName || "Misafir"}</p>
               <p className="text-xs text-primary-foreground/70">{city}</p>
             </div>
           </div>
-        </div>
+        </button>
 
         {/* Menu items */}
         <div className="py-2">
@@ -60,16 +68,6 @@ export default function MenuDrawer({ open, onClose, onNavigate, city, userName, 
             </button>
           ))}
 
-          {/* Admin entry - separated */}
-          <div className="border-t border-primary/10 mt-2 pt-2">
-            <button
-              onClick={() => onNavigate("admin")}
-              className="flex w-full items-center gap-4 px-6 py-3 text-sm font-medium transition-colors hover:bg-primary/5"
-            >
-              <span className="material-symbols-outlined text-accent text-[22px]">admin_panel_settings</span>
-              <span className="text-accent">Admin Paneli</span>
-            </button>
-          </div>
         </div>
 
         {/* Footer */}
@@ -88,7 +86,30 @@ export default function MenuDrawer({ open, onClose, onNavigate, city, userName, 
               </div>
             </button>
           )}
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          
+          {/* Auth Button */}
+          {isLoggedIn ? (
+            <button
+              onClick={async () => {
+                await supabase.auth.signOut();
+                onClose();
+              }}
+              className="flex w-full items-center gap-2 rounded-lg bg-destructive/10 px-4 py-2.5 text-destructive font-medium transition-colors hover:bg-destructive/20"
+            >
+              <span className="material-symbols-outlined text-[18px]">logout</span>
+              <span>Çıkış Yap</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => onNavigate("profile")}
+              className="flex w-full items-center gap-2 rounded-lg bg-primary/10 px-4 py-2.5 text-primary font-medium transition-colors hover:bg-primary/20"
+            >
+              <span className="material-symbols-outlined text-[18px]">login</span>
+              <span>Giriş Yap / Kayıt Ol</span>
+            </button>
+          )}
+
+          <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
             <span className="material-symbols-outlined text-[16px]">info</span>
             <span>İKRA v1.0 — Namaz & Kur'an</span>
           </div>

@@ -128,7 +128,16 @@ const CITY_COORDS: Record<string, [number, number]> = {
 const QIBLA_THRESHOLD = 5;
 
 export default function PrayerTimesPage({ city, setCity, onNotifications, onMenuOpen }: PrayerTimesPageProps) {
-  const { times, loading } = usePrayerTimes(city);
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | undefined>(() => {
+    try {
+      const saved = localStorage.getItem("ikra_coords");
+      return saved ? JSON.parse(saved) : undefined;
+    } catch {
+      return undefined;
+    }
+  });
+  
+  const { times, loading } = usePrayerTimes(city, coords);
   const { ayet, hadis } = useDailyContent();
   const { toggleFavorite, isFavorite } = useFavorites();
   const [notifications, setNotifications] = useState<Record<string, boolean>>(() => {
@@ -142,6 +151,8 @@ export default function PrayerTimesPage({ city, setCity, onNotifications, onMenu
   const [compassHeading, setCompassHeading] = useState<number | null>(null);
   const [compassActive, setCompassActive] = useState(false);
   const [permissionDenied, setPermissionDenied] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
   const handlerRef = useRef<((e: DeviceOrientationEvent) => void) | null>(null);
   const absHandlerRef = useRef<((e: DeviceOrientationEvent) => void) | null>(null);
 
@@ -150,8 +161,8 @@ export default function PrayerTimesPage({ city, setCity, onNotifications, onMenu
   );
 
   // Calculate qibla bearing for current city
-  const coords = CITY_COORDS[city] || CITY_COORDS["İstanbul"];
-  const qiblaBearing = calculateQiblaBearing(coords[0], coords[1]);
+  const qiblaCoords = CITY_COORDS[city] || CITY_COORDS["İstanbul"];
+  const qiblaBearing = calculateQiblaBearing(qiblaCoords[0], qiblaCoords[1]);
 
   // Calculate direction to Qibla
   const getQiblaDirection = () => {
@@ -237,6 +248,52 @@ export default function PrayerTimesPage({ city, setCity, onNotifications, onMenu
     return () => cleanupCompass();
   }, []);
 
+  const handleGetLocation = async () => {
+    setLocationLoading(true);
+    setLocationError(null);
+    try {
+       const { Geolocation } = await import("@capacitor/geolocation");
+       // Request permissions
+       const perm = await Geolocation.requestPermissions();
+       if (perm.location !== 'granted') {
+          setLocationError("Konum izni verilmedi.");
+          setLocationLoading(false);
+          return;
+       }
+
+       // Fetch location
+       const position = await Geolocation.getCurrentPosition({
+          enableHighAccuracy: true,
+          timeout: 10000
+       });
+
+       const newCoords = { lat: position.coords.latitude, lng: position.coords.longitude };
+       setCoords(newCoords);
+       
+       // Reverse geocoding to find approximate city/district
+       try {
+           const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${newCoords.lat}&lon=${newCoords.lng}&zoom=10&addressdetails=1`);
+           const data = await res.json();
+           const foundCity = data.address.city || data.address.town || data.address.province || data.address.state || "Mevcut Konum";
+           // Map the found city back to our known list if possible, or just use "Mevcut Konum"
+           const matchedCity = TURKISH_CITIES.find(c => foundCity.includes(c)) || "Mevcut Konum";
+           setCity(matchedCity);
+           localStorage.setItem("ikra_city", matchedCity);
+           localStorage.setItem("ikra_coords", JSON.stringify(newCoords));
+       } catch (geoError) {
+           console.log("Reverse geocode failed, using coordinates only.", geoError);
+           setCity("Mevcut Konum");
+           localStorage.setItem("ikra_city", "Mevcut Konum");
+           localStorage.setItem("ikra_coords", JSON.stringify(newCoords));
+       }
+    } catch (e: any) {
+       console.error("Geolocation error:", e);
+       setLocationError("Konum alınamadı. Lütfen GPS ayarlarınızı kontrol edin.");
+    } finally {
+       setLocationLoading(false);
+    }
+  };
+
   return (
     <div className="pb-20">
       <StickyHeader
@@ -249,14 +306,30 @@ export default function PrayerTimesPage({ city, setCity, onNotifications, onMenu
       <div className="px-4 pt-4">
         {/* City selector */}
         <div className="relative mb-4">
-          <button
-            onClick={() => setSearchOpen(!searchOpen)}
-            className="flex w-full items-center gap-3 rounded-xl border border-primary/10 bg-card px-4 py-3 text-sm shadow-sm"
-          >
-            <span className="material-symbols-outlined text-primary text-[20px]">location_on</span>
-            <span className="font-medium">{city}</span>
-            <span className="material-symbols-outlined ml-auto text-muted-foreground">expand_more</span>
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setSearchOpen(!searchOpen)}
+              className="flex flex-1 items-center gap-3 rounded-xl border border-primary/10 bg-card px-4 py-3 text-sm shadow-sm"
+            >
+              <span className="material-symbols-outlined text-primary text-[20px]">location_on</span>
+              <span className="font-medium">{city}</span>
+              <span className="material-symbols-outlined ml-auto text-muted-foreground">expand_more</span>
+            </button>
+            <button
+              onClick={handleGetLocation}
+              disabled={locationLoading}
+              title="Konumdan Hassas Vakit Al"
+              className="flex items-center justify-center rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground shadow-sm disabled:opacity-50"
+            >
+              {locationLoading ? (
+                 <span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
+              ) : (
+                 <span className="material-symbols-outlined text-[20px]">my_location</span>
+              )}
+            </button>
+          </div>
+          {locationError && <p className="text-xs text-destructive mt-1">{locationError}</p>}
+          {coords && <p className="text-[10px] text-primary mt-1">✓ Yüksek hassasiyetli konum aktif</p>}
 
           {searchOpen && (
             <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-64 overflow-auto rounded-xl border border-primary/10 bg-card shadow-lg">
@@ -273,7 +346,14 @@ export default function PrayerTimesPage({ city, setCity, onNotifications, onMenu
               {filteredCities.map((c) => (
                 <button
                   key={c}
-                  onClick={() => { setCity(c); setSearchOpen(false); setSearch(""); localStorage.setItem("ikra_city", c); }}
+                  onClick={() => { 
+                    setCity(c); 
+                    setCoords(undefined);
+                    setSearchOpen(false); 
+                    setSearch(""); 
+                    localStorage.setItem("ikra_city", c); 
+                    localStorage.removeItem("ikra_coords");
+                  }}
                   className={cn(
                     "block w-full px-4 py-2 text-left text-sm hover:bg-primary/5",
                     c === city && "bg-primary/5 font-bold text-primary"

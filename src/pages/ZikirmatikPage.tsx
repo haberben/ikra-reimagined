@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import StickyHeader from "@/components/layout/StickyHeader";
 import { cn } from "@/lib/utils";
+import { Haptics, ImpactStyle } from "@capacitor/haptics";
 
 const DHIKR_PRESETS = [
   { name: "Sübhanallah", arabic: "سُبْحَانَ اللَّهِ", target: 33 },
@@ -35,20 +36,35 @@ export default function ZikirmatikPage({ onBack }: { onBack: () => void }) {
 
     setCount((c) => c + 1);
     setTotalCount((t) => t + 1);
+    // Haptic feedback logic
+    const triggerHaptics = async () => {
+      if (!vibrationEnabled) return;
+      
+      try {
+        if (count + 1 >= target) {
+          // Vibrate on completion (heavy success pattern)
+          await Haptics.impact({ style: ImpactStyle.Heavy });
+          setTimeout(() => Haptics.impact({ style: ImpactStyle.Heavy }), 150);
+          setTimeout(() => Haptics.impact({ style: ImpactStyle.Heavy }), 300);
+        } else if ((count + 1) % 33 === 0) {
+          // Vibrate longer at milestones
+          await Haptics.impact({ style: ImpactStyle.Medium });
+          setTimeout(() => Haptics.impact({ style: ImpactStyle.Medium }), 150);
+        } else {
+          // Light tick for every count
+          await Haptics.impact({ style: ImpactStyle.Light });
+        }
+      } catch (e) {
+        // Fallback for browsers if Haptics plugin fails
+        if (navigator.vibrate) {
+          if (count + 1 >= target) navigator.vibrate([100, 50, 100, 50, 100]);
+          else if ((count + 1) % 33 === 0) navigator.vibrate([50, 30, 50]);
+          else navigator.vibrate(20);
+        }
+      }
+    };
 
-    if (vibrationEnabled && navigator.vibrate) {
-      navigator.vibrate(30);
-    }
-
-    // Vibrate longer at milestones
-    if ((count + 1) % 33 === 0 && navigator.vibrate && vibrationEnabled) {
-      navigator.vibrate([50, 30, 50]);
-    }
-
-    // Vibrate on completion
-    if (count + 1 >= target && navigator.vibrate && vibrationEnabled) {
-      navigator.vibrate([100, 50, 100, 50, 100]);
-    }
+    triggerHaptics();
   }, [count, target, completed, vibrationEnabled]);
 
   const handleReset = () => {

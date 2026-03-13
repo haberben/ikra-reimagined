@@ -2,6 +2,9 @@ import { usePrayerTimes, useCurrentPrayer } from "@/hooks/usePrayerTimes";
 import { useDailyContent } from "@/hooks/useDailyContent";
 import { useFavorites } from "@/hooks/useFavorites";
 import StickyHeader from "@/components/layout/StickyHeader";
+import { DailyFactCard } from "@/components/DailyFactCard";
+import { MoodDiscovery } from "@/components/MoodDiscovery";
+import { TevekkulVakti } from "@/components/TevekkulVakti";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -155,6 +158,17 @@ export default function HomePage({ city, onNavigate, onNotifications, onZikirmat
           )}
         </div>
       </div>
+
+      {/* Tevekkül Vakti */}
+      <TevekkulVakti />
+
+      {/* Bunu Biliyor Muydun? Karti */}
+      <div className="px-4">
+        <DailyFactCard />
+      </div>
+
+      {/* Duygu Durumu Keşfi */}
+      <MoodDiscovery />
 
       {/* Günün Ayeti */}
       <div className="mt-6 px-4">

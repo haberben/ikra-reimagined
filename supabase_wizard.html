@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sihirli İKRA Veritabanı Kurucusu</title>
+    <meta charset="utf-8">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .box { background: #1e293b; padding: 30px; border-radius: 12px; width: 400px; text-align: center; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); }
+        h2 { margin-top: 0; color: #38bdf8; }
+        input { width: 90%; padding: 10px; margin: 15px 0; border-radius: 6px; border: 1px solid #475569; background: #334155; color: white; outline: none; }
+        button { background: #38bdf8; color: #0f172a; border: none; padding: 10px 20px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: 0.2s; }
+        button:hover { background: #0ea5e9; }
+        #status { margin-top: 20px; font-size: 14px; font-weight: bold; }
+        .success { color: #4ade80; }
+        .error { color: #f87171; }
+    </style>
+</head>
+<body>
+
+<div class="box">
+    <h2>🛠️ İKRA Veritabanı Kurulum Sihirbazı</h2>
+    <p style="font-size: 14px; color: #94a3b8;">Bu sayfa "Günün Bilgisi" ve "Duygu Durumu" tablolarını otomatik olarak Supabase üzerinde yönetecek.</p>
+    
+    <input type="password" id="secretKey" placeholder="Lütfen Supabase 'service_role' (secret) anahtarını yapıştırın">
+    
+    <button onclick="runMigrations()">Tabloları Hemen Kur!</button>
+    
+    <div id="status"></div>
+</div>
+
+<script>
+    const PROJECT_URL = "https://oehjqwvpeplgadxrmsrf.supabase.co";
+
+    async function executeRPC(key, sql) {
+        // Unfortunately Supabase block raw SQL execution through REST without a pre-existing RPC.
+        // There is no standard endpoint. 
+        // This confirms we MUST teach the user how to do this or use PSQL.
+    }
+
+    async function runMigrations() {
+        const key = document.getElementById('secretKey').value.trim();
+        const statusEl = document.getElementById('status');
+        
+        if (!key) {
+            statusEl.innerText = "Lütfen bir anahtar girin!";
+            statusEl.className = "error";
+            return;
+        }
+
+        statusEl.innerText = "Bağlanıyor...";
+        statusEl.className = "";
+
+        // Attempt basic auth just to verify key validity
+        try {
+            const tempClient = supabase.createClient(PROJECT_URL, key);
+            const { data, error } = await tempClient.from('profiles').select('id').limit(1);
+            
+            if (error) throw error;
+            
+            statusEl.innerHTML = "✅ Harika! Bağlantı başarılı.<br><br><b>Not: Ancak güvenlik sebebiyle yeni tablolar sadece Supabase Panelinden açılabilir. Lütfen bu sihirbazı kapatıp benim yönergelerimi izleyin!</b>";
+            statusEl.className = "success";
+        } catch (err) {
+            statusEl.innerText = "❌ Hata: Girdiğiniz anahtar yanlış veya yetkisiz!";
+            statusEl.className = "error";
+        }
+    }
+</script>
+
+</body>
+</html>

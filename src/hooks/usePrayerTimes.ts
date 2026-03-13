@@ -16,7 +16,7 @@ export interface HijriDate {
   year: string;
 }
 
-export function usePrayerTimes(city: string) {
+export function usePrayerTimes(city: string, coords?: { lat: number; lng: number }) {
   const [times, setTimes] = useState<PrayerTimesData | null>(null);
   const [hijri, setHijri] = useState<HijriDate | null>(null);
   const [loading, setLoading] = useState(true);
@@ -25,9 +25,14 @@ export function usePrayerTimes(city: string) {
     const fetchTimes = async () => {
       try {
         setLoading(true);
-        const res = await fetch(
-          `https://api.aladhan.com/v1/timingsByCity?city=${encodeURIComponent(city)}&country=TR&method=13`
-        );
+        let url = `https://api.aladhan.com/v1/timingsByCity?city=${encodeURIComponent(city)}&country=TR&method=13`;
+        
+        if (coords) {
+           const timestamp = Math.floor(Date.now() / 1000);
+           url = `https://api.aladhan.com/v1/timings/${timestamp}?latitude=${coords.lat}&longitude=${coords.lng}&method=13`;
+        }
+
+        const res = await fetch(url);
         const data = await res.json();
         if (data.code === 200) {
           setTimes(data.data.timings);
@@ -40,7 +45,7 @@ export function usePrayerTimes(city: string) {
       }
     };
     fetchTimes();
-  }, [city]);
+  }, [city, coords?.lat, coords?.lng]);
 
   return { times, hijri, loading };
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import StickyHeader from "@/components/layout/StickyHeader";
 import { cn } from "@/lib/utils";
@@ -49,6 +49,9 @@ export default function NotificationsPage({ onBack }: { onBack: () => void }) {
   });
   const [selectedSound, setSelectedSound] = useState<NotifSound>(getNotifSoundPref());
   const [adminNotifs, setAdminNotifs] = useState<Notification[]>([]);
+  const [closedNotifIds, setClosedNotifIds] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem("ikra_closed_notifs") || "[]"); } catch { return []; }
+  });
   const [expandedNotif, setExpandedNotif] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [permissionStatus, setPermissionStatus] = useState<string>(getNotificationPermission());
@@ -88,12 +91,30 @@ export default function NotificationsPage({ onBack }: { onBack: () => void }) {
   }, [dailyNotifs]);
 
   const fetchAdminNotifs = async () => {
+    // Only fetch notifications created within the last 24 hours
+    const oneDayAgo = new Date();
+    oneDayAgo.setHours(oneDayAgo.getHours() - 24);
+    
     const { data } = await supabase
       .from("notifications")
       .select("*")
+      .gte("created_at", oneDayAgo.toISOString())
       .order("created_at", { ascending: false })
       .limit(50);
-    if (data) setAdminNotifs(data as Notification[]);
+      
+    if (data) {
+      // Filter out notifications the user has locally closed
+      const visibleData = data.filter(n => !closedNotifIds.includes(n.id));
+      setAdminNotifs(visibleData as Notification[]);
+    }
+  };
+
+  const handleCloseNotif = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    const newClosed = [...closedNotifIds, id];
+    setClosedNotifIds(newClosed);
+    localStorage.setItem("ikra_closed_notifs", JSON.stringify(newClosed));
+    setAdminNotifs(prev => prev.filter(n => n.id !== id));
   };
 
   const handleCopy = (text: string, id: string) => {
@@ -286,17 +307,24 @@ export default function NotificationsPage({ onBack }: { onBack: () => void }) {
                 >
                   <button
                     onClick={() => setExpandedNotif(expandedNotif === n.id ? null : n.id)}
-                    className="w-full text-left"
+                    className="w-full text-left relative pr-8"
                   >
                     <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-bold">{n.title}</h4>
-                      <span className="text-[10px] text-muted-foreground">
+                      <h4 className="text-sm font-bold pr-2">{n.title}</h4>
+                      <span className="text-[10px] text-muted-foreground whitespace-nowrap">
                         {new Date(n.created_at).toLocaleDateString("tr-TR")}
                       </span>
                     </div>
                     <p className={cn("mt-1 text-sm text-muted-foreground", expandedNotif !== n.id && "line-clamp-2")}>
                       {n.body}
                     </p>
+                    <button 
+                      onClick={(e) => handleCloseNotif(e, n.id)}
+                      className="absolute top-0 right-0 p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded-full transition-colors"
+                      title="Bildirimi Gizle"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">close</span>
+                    </button>
                   </button>
 
                   {expandedNotif === n.id && (

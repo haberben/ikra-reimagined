@@ -14,11 +14,13 @@ import QuranPage from "@/pages/QuranPage";
 import GalleryPage from "@/pages/GalleryPage";
 import FavoritesPage from "@/pages/FavoritesPage";
 import HatimPage from "@/pages/HatimPage";
+import DualarPage from "@/pages/DualarPage";
 import NotificationsPage from "@/pages/NotificationsPage";
 import ZikirmatikPage from "@/pages/ZikirmatikPage";
 import SuggestionsPage from "@/pages/SuggestionsPage";
-import AdminPanel from "@/components/AdminPanel";
+import ProfilePanel from "@/components/ProfilePanel";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 const queryClient = new QueryClient();
 
@@ -29,10 +31,11 @@ const App = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showZikirmatik, setShowZikirmatik] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [showAdmin, setShowAdmin] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [pageTransition, setPageTransition] = useState(false);
   const [dark, setDark] = useState(() => localStorage.getItem("ikra_theme") === "dark");
+  const [authEmail, setAuthEmail] = useState<string | null>(null);
 
   // Request permissions on first launch
   useEffect(() => {
@@ -68,6 +71,23 @@ const App = () => {
     }).catch(() => {
       // Ignore if not running in native Capacitor environment
     });
+
+    const handleOpenProfile = () => setShowProfile(true);
+    window.addEventListener("open-profile", handleOpenProfile);
+
+    // Track authentication state to display in MenuDrawer
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setAuthEmail(session?.user?.user_metadata?.full_name || session?.user?.email || null);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setAuthEmail(session?.user?.user_metadata?.full_name || session?.user?.email || null);
+    });
+
+    return () => {
+      window.removeEventListener("open-profile", handleOpenProfile);
+      subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -114,14 +134,14 @@ const App = () => {
     if (target === "notifications") handleNotifications();
     else if (target === "zikirmatik") handleZikirmatik();
     else if (target === "suggestions") handleSuggestions();
-    else if (target === "admin") setShowAdmin(true);
+    else if (target === "profile") setShowProfile(true);
     else setActiveTab(target);
   };
 
   // Android hardware back button handling
   const handleBackButton = useCallback(() => {
-    if (showAdmin) {
-      setShowAdmin(false);
+    if (showProfile) {
+      setShowProfile(false);
     } else if (showMenu) {
       setShowMenu(false);
     } else if (showNotifications) {
@@ -136,7 +156,7 @@ const App = () => {
       // On home tab, minimize app
       import("@capacitor/app").then(({ App }) => App.minimizeApp()).catch(() => {});
     }
-  }, [showAdmin, showMenu, showNotifications, showZikirmatik, showSuggestions, activeTab, handleNotificationsBack, handleZikirmatikBack, handleSuggestionsBack]);
+  }, [showProfile, showMenu, showNotifications, showZikirmatik, showSuggestions, activeTab, handleNotificationsBack, handleZikirmatikBack, handleSuggestionsBack]);
 
   useBackButton(handleBackButton, onboarded);
 
@@ -208,6 +228,8 @@ const App = () => {
         return <FavoritesPage onNotifications={handleNotifications} onMenuOpen={handleMenuOpen} />;
       case "hatim":
         return <HatimPage onMenuOpen={handleMenuOpen} onNotifications={handleNotifications} />;
+      case "dualar":
+        return <DualarPage />;
       default:
         return <HomePage city={city} onNavigate={setActiveTab} onNotifications={handleNotifications} onZikirmatik={handleZikirmatik} onMenuOpen={handleMenuOpen} />;
     }
@@ -217,7 +239,7 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <Sonner />
       <InstallPrompt />
-      {showAdmin && <AdminPanel onClose={() => setShowAdmin(false)} />}
+      {showProfile && <ProfilePanel onClose={() => setShowProfile(false)} />}
       <div className="min-h-screen bg-background">
         {renderTab()}
         <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
@@ -227,7 +249,8 @@ const App = () => {
         onClose={() => setShowMenu(false)}
         onNavigate={handleMenuNavigate}
         city={city}
-        userName={localStorage.getItem("ikra_name") || ""}
+        userName={authEmail || localStorage.getItem("ikra_name") || ""}
+        isLoggedIn={!!authEmail}
         dark={dark}
         onToggleDark={toggleDark}
       />

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
-type AdminTab = "wallpaper" | "daily" | "video" | "notifications" | "suggestions" | "users";
+type AdminTab = "wallpaper" | "daily" | "video" | "notifications" | "suggestions" | "users" | "facts" | "moods" | "tevekkul" | "dualar";
 
 interface AdminPanelProps {
   onClose: () => void;
@@ -20,12 +20,14 @@ function extractPlaylistId(url: string): string | null {
 
 const WALLPAPER_CATEGORIES = ["Günün Ayeti", "Hadis-i Şerifler", "Hat Sanatı", "Manzara"];
 
-export default function AdminPanel({ onClose }: AdminPanelProps) {
+export default function ProfilePanel({ onClose }: AdminPanelProps) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isModerator, setIsModerator] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [authError, setAuthError] = useState("");
@@ -76,6 +78,31 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
 
+  // Facts state
+  const [facts, setFacts] = useState<any[]>([]);
+  const [factText, setFactText] = useState("");
+  const [factSource, setFactSource] = useState("");
+  const [factSaving, setFactSaving] = useState(false);
+
+  // Moods state
+  const [moodContents, setMoodContents] = useState<any[]>([]);
+  const [moodCategory, setMoodCategory] = useState("Üzgün");
+  const [moodType, setMoodType] = useState<"ayet" | "hadis">("ayet");
+  const [moodTurkish, setMoodTurkish] = useState("");
+  const [moodArabic, setMoodArabic] = useState("");
+  const [moodSource, setMoodSource] = useState("");
+  const [moodSaving, setMoodSaving] = useState(false);
+
+  // Tevekkul Vakti state
+  const [tevekkulItems, setTevekkulItems] = useState<any[]>([]);
+  const [tevekkulText, setTevekkulText] = useState("");
+  const [tevekkulSource, setTevekkulSource] = useState("");
+  const [tevekkulSaving, setTevekkulSaving] = useState(false);
+
+  // Dualar state
+  const [duaRequests, setDuaRequests] = useState<any[]>([]);
+  const [dualarLoading, setDualarLoading] = useState(false);
+
   // Notification state
   const [notifTitle, setNotifTitle] = useState("");
   const [notifBody, setNotifBody] = useState("");
@@ -98,6 +125,10 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
     if (session) {
       setIsLoggedIn(true);
       setCurrentUserId(session.user.id);
+      
+      const displayName = session.user.user_metadata?.full_name || session.user.email || "";
+      setUserEmail(displayName);
+
       await supabase.rpc("assign_admin_if_eligible");
       const { data: roles } = await supabase
         .from("user_roles")
@@ -115,7 +146,16 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
   const handleAuth = async () => {
     setAuthError("");
     if (authMode === "signup") {
-      const { error } = await supabase.auth.signUp({ email, password });
+      if (!name.trim()) { setAuthError("Lütfen adınızı girin."); return; }
+      const { error } = await supabase.auth.signUp({ 
+        email, 
+        password,
+        options: {
+          data: {
+            full_name: name.trim()
+          }
+        }
+      });
       if (error) { setAuthError(error.message); return; }
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -139,6 +179,10 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
     fetchNotifications();
     fetchSuggestions();
     fetchUsers();
+    fetchFacts();
+    fetchMoods();
+    fetchTevekkul();
+    fetchDuaRequests();
   };
 
   // ============ USERS ============
@@ -418,6 +462,79 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
     fetchNotifications();
   };
 
+  // ============ FACTS ============
+  const fetchFacts = async () => {
+    const { data } = await supabase.from("islamic_facts").select("*").order("created_at", { ascending: false });
+    if (data) setFacts(data);
+  };
+
+  const handleSaveFact = async () => {
+    if (!factText.trim()) return;
+    setFactSaving(true);
+    await supabase.from("islamic_facts").insert({
+      fact_text: factText.trim(),
+      source: factSource.trim() || null
+    } as any);
+    setFactText("");
+    setFactSource("");
+    fetchFacts();
+    setFactSaving(false);
+  };
+
+  const deleteFact = async (id: string) => {
+    await supabase.from("islamic_facts").delete().eq("id", id);
+    fetchFacts();
+  };
+
+  // ============ MOODS ============
+  const fetchMoods = async () => {
+    const { data } = await supabase.from("mood_contents").select("*").order("created_at", { ascending: false });
+    if (data) setMoodContents(data);
+  };
+
+  const handleSaveMood = async () => {
+    if (!moodTurkish.trim()) return;
+    setMoodSaving(true);
+    await supabase.from("mood_contents").insert({
+      mood: moodCategory,
+      type: moodType,
+      turkish_text: moodTurkish.trim(),
+      arabic_text: moodArabic.trim() || null,
+      source: moodSource.trim() || null
+    } as any);
+    setMoodTurkish(""); setMoodArabic(""); setMoodSource("");
+    fetchMoods();
+    setMoodSaving(false);
+  };
+
+  const deleteMood = async (id: string) => {
+    await supabase.from("mood_contents").delete().eq("id", id);
+    fetchMoods();
+  };
+
+  // ============ TEVEKKÜL VAKTİ ============
+  const fetchTevekkul = async () => {
+    const { data } = await supabase.from("tevekkul_vakti").select("*").order("created_at", { ascending: false });
+    if (data) setTevekkulItems(data);
+  };
+
+  const handleSaveTevekkul = async () => {
+    if (!tevekkulText.trim()) return;
+    setTevekkulSaving(true);
+    await supabase.from("tevekkul_vakti").insert({
+      content_text: tevekkulText.trim(),
+      source: tevekkulSource.trim() || null
+    } as any);
+    setTevekkulText(""); setTevekkulSource("");
+    fetchTevekkul();
+    setTevekkulSaving(false);
+  };
+
+  const deleteTevekkul = async (id: string) => {
+    await supabase.from("tevekkul_vakti").delete().eq("id", id);
+    fetchTevekkul();
+  };
+
   // ============ SUGGESTIONS ============
   const fetchSuggestions = async () => {
     setSuggestionsLoading(true);
@@ -485,11 +602,34 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
     fetchSuggestions();
   };
 
+  // ============ DUA REQUESTS ============
+  const fetchDuaRequests = async () => {
+    setDualarLoading(true);
+    const { data } = await supabase
+      .from("dua_requests")
+      .select(`
+        id, user_id, prayer_text, is_approved, created_at,
+        profiles ( full_name, avatar_url )
+      `)
+      .order("created_at", { ascending: false });
+    if (data) setDuaRequests(data);
+    setDualarLoading(false);
+  };
+
+  const toggleDuaApproval = async (id: string, currentStatus: boolean) => {
+    await supabase.from("dua_requests").update({ is_approved: !currentStatus }).eq("id", id);
+    fetchDuaRequests();
+  };
+
+  const deleteDuaRequest = async (id: string) => {
+    if (!window.confirm("Bu dua isteğini silmek istediğinizden emin misiniz?")) return;
+    await supabase.from("dua_requests").delete().eq("id", id);
+    fetchDuaRequests();
+  };
+
   // Helper: can user delete/edit this item?
   const canModify = (item: any) => {
-    if (isAdmin) return true;
-    if (isModerator && item.created_by_user_id === currentUserId) return true;
-    return false;
+    return isAdmin || isModerator;
   };
 
   // ============ RENDER ============
@@ -501,22 +641,20 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
     );
   }
 
-  if (!isLoggedIn || (!isAdmin && !isModerator)) {
+  if (!isLoggedIn) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-background p-4">
         <div className="w-full max-w-sm">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold">Admin Girişi</h2>
+            <h2 className="text-xl font-bold">Giriş Yap / Kayıt Ol</h2>
             <button onClick={onClose}>
               <span className="material-symbols-outlined text-muted-foreground">close</span>
             </button>
           </div>
-          {isLoggedIn && !isAdmin && !isModerator && (
-            <div className="mb-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
-              Bu hesap yetkilendirilmemiş. Admin ile iletişime geçin.
-            </div>
-          )}
           <div className="space-y-3">
+            {authMode === "signup" && (
+              <input type="text" placeholder="Ad Soyad" value={name} onChange={(e) => setName(e.target.value)} className="w-full rounded-xl border border-primary/10 bg-card px-4 py-3 text-sm text-foreground" />
+            )}
             <input type="email" placeholder="E-posta" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-xl border border-primary/10 bg-card px-4 py-3 text-sm text-foreground" />
             <input type="password" placeholder="Şifre" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full rounded-xl border border-primary/10 bg-card px-4 py-3 text-sm text-foreground" />
             {authError && <p className="text-xs text-destructive">{authError}</p>}
@@ -536,6 +674,10 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
     { key: "wallpaper", label: "Duvar Kağıdı", icon: "wallpaper" },
     { key: "daily", label: "Ayet/Hadis", icon: "menu_book" },
     { key: "video", label: "Videolar", icon: "video_library" },
+    { key: "facts", label: "Günün Bilgisi", icon: "lightbulb" },
+    { key: "moods", label: "Duygular", icon: "self_improvement" },
+    { key: "tevekkul", label: "Tevekkül", icon: "filter_vintage" },
+    { key: "dualar", label: "Dualar", icon: "diversity_1" },
     { key: "notifications", label: "Bildirimler", icon: "notifications" },
     { key: "suggestions", label: "Öneriler", icon: "lightbulb" },
     { key: "users", label: "Kullanıcılar", icon: "group", adminOnly: true },
@@ -548,35 +690,54 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
       {/* Header */}
       <div className="sticky top-0 z-10 border-b border-primary/10 bg-card">
         <div className="flex items-center justify-between px-4 py-3">
-          <h3 className="text-lg font-bold">
-            Admin Paneli
-            {isModerator && !isAdmin && <span className="ml-2 text-xs text-muted-foreground">(Moderatör)</span>}
-          </h3>
-          <div className="flex items-center gap-2">
-            <button onClick={handleLogout} className="text-xs text-muted-foreground">Çıkış</button>
-            <button onClick={onClose}>
-              <span className="material-symbols-outlined">close</span>
-            </button>
+          <h3 className="text-lg font-bold">Profilim</h3>
+          <button onClick={onClose}>
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        {/* Profile Info */}
+        <div className="px-4 pb-4">
+          <div className="rounded-xl bg-primary/5 p-4 flex items-center justify-between">
+            <div>
+              <p className="font-bold text-sm block">{userEmail}</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {isAdmin ? "Yönetici (Admin)" : isModerator ? "Moderatör" : "Kullanıcı"}
+              </p>
+            </div>
+            <button onClick={handleLogout} className="text-xs font-bold text-destructive bg-destructive/10 px-3 py-1.5 rounded-lg">Çıkış Yap</button>
           </div>
         </div>
-        <div className="flex overflow-x-auto scrollbar-hide">
-          {visibleTabs.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setActiveTab(t.key)}
-              className={cn(
-                "flex items-center gap-1.5 shrink-0 px-4 py-2.5 text-xs font-bold border-b-2 transition-colors",
-                activeTab === t.key ? "border-primary text-primary" : "border-transparent text-muted-foreground"
-              )}
-            >
-              <span className="material-symbols-outlined text-[16px]">{t.icon}</span>
-              {t.label}
-            </button>
-          ))}
-        </div>
+
+        {(isAdmin || isModerator) && (
+          <div className="flex overflow-x-auto scrollbar-hide border-t border-primary/10">
+            {visibleTabs.map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setActiveTab(t.key)}
+                className={cn(
+                  "flex items-center gap-1.5 shrink-0 px-4 py-2.5 text-xs font-bold border-b-2 transition-colors",
+                  activeTab === t.key ? "border-primary text-primary" : "border-transparent text-muted-foreground"
+                )}
+              >
+                <span className="material-symbols-outlined text-[16px]">{t.icon}</span>
+                {t.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="p-4">
+        {!(isAdmin || isModerator) ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center opacity-70">
+            <span className="material-symbols-outlined text-primary text-[48px] mb-4">verified_user</span>
+            <p className="text-sm font-medium">Profilinize hoş geldiniz.</p>
+            <p className="text-xs text-muted-foreground mt-1">Uygulamadaki tüm özellikleri artık sorunsuz kullanabilirsiniz.</p>
+          </div>
+        ) : (
+          <>
+            {/* ===== TABS CONTENT START ===== */}
         {/* ===== WALLPAPER TAB ===== */}
         {activeTab === "wallpaper" && (
           <div className="space-y-4">
@@ -740,6 +901,118 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                     </div>
                     <p className="text-xs font-arabic mt-1" dir="rtl">{item.arabic_text?.substring(0, 60)}...</p>
                     <p className="text-xs text-muted-foreground mt-1">{item.turkish_text?.substring(0, 80)}...</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ===== FACTS TAB ===== */}
+        {activeTab === "facts" && (
+          <div className="space-y-4">
+            <div className="rounded-xl border border-primary/10 bg-card p-4 space-y-3">
+              <h4 className="text-sm font-bold">Yeni Bilgi Ekle ("Bunu Biliyor Muydun?")</h4>
+              <textarea placeholder="Bilgi metni *" value={factText} onChange={(e) => setFactText(e.target.value)} rows={3} className="w-full rounded-lg border border-primary/10 bg-card px-3 py-2 text-sm text-foreground resize-none" />
+              <input placeholder="Kaynak (opsiyonel)" value={factSource} onChange={(e) => setFactSource(e.target.value)} className="w-full rounded-lg border border-primary/10 bg-card px-3 py-2 text-sm text-foreground" />
+              <button onClick={handleSaveFact} disabled={factSaving || !factText.trim()} className="w-full rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50">
+                {factSaving ? "Kaydediliyor..." : "Kaydet"}
+              </button>
+            </div>
+            <div>
+              <h4 className="text-sm font-bold mb-2">Mevcut Bilgiler ({facts.length})</h4>
+              <div className="space-y-2">
+                {facts.map((f) => (
+                  <div key={f.id} className="rounded-xl border border-primary/10 bg-card p-3">
+                    <div className="flex items-start justify-between">
+                      <p className="text-xs font-medium text-foreground pr-4 line-clamp-3">{f.fact_text}</p>
+                      <button onClick={() => deleteFact(f.id)} className="text-destructive shrink-0">
+                        <span className="material-symbols-outlined text-[14px]">delete</span>
+                      </button>
+                    </div>
+                    {f.source && <p className="text-[10px] text-muted-foreground mt-1">— {f.source}</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ===== MOODS TAB ===== */}
+        {activeTab === "moods" && (
+          <div className="space-y-4">
+            <div className="rounded-xl border border-primary/10 bg-card p-4 space-y-3">
+              <h4 className="text-sm font-bold">Yeni Duygu Durumu İçeriği Ekle</h4>
+              <select value={moodCategory} onChange={(e) => setMoodCategory(e.target.value)} className="w-full rounded-lg border border-primary/10 bg-card px-3 py-2 text-sm text-foreground">
+                <option value="Üzgün">Üzgün</option>
+                <option value="Stresli">Stresli</option>
+                <option value="Şükreden">Şükreden</option>
+                <option value="Kararsız">Kararsız</option>
+                <option value="Umutsuz">Umutsuz</option>
+                <option value="Yalnız">Yalnız</option>
+                <option value="Öfkeli">Öfkeli</option>
+              </select>
+              <div className="flex gap-2">
+                <button onClick={() => setMoodType("ayet")} className={cn("flex-1 rounded-lg py-2 text-xs font-bold", moodType === "ayet" ? "bg-primary text-primary-foreground" : "bg-secondary text-foreground")}>Ayet</button>
+                <button onClick={() => setMoodType("hadis")} className={cn("flex-1 rounded-lg py-2 text-xs font-bold", moodType === "hadis" ? "bg-primary text-primary-foreground" : "bg-secondary text-foreground")}>Hadis</button>
+              </div>
+              <input placeholder="Arapça metin (opsiyonel)" value={moodArabic} onChange={(e) => setMoodArabic(e.target.value)} className="w-full rounded-lg border border-primary/10 bg-card px-3 py-2 text-sm text-foreground font-arabic" dir="rtl" />
+              <textarea placeholder="Türkçe Meali *" value={moodTurkish} onChange={(e) => setMoodTurkish(e.target.value)} rows={3} className="w-full rounded-lg border border-primary/10 bg-card px-3 py-2 text-sm text-foreground resize-none" />
+              <input placeholder="Kaynak (opsiyonel)" value={moodSource} onChange={(e) => setMoodSource(e.target.value)} className="w-full rounded-lg border border-primary/10 bg-card px-3 py-2 text-sm text-foreground" />
+              
+              <button onClick={handleSaveMood} disabled={moodSaving || !moodTurkish.trim()} className="w-full rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50">
+                {moodSaving ? "Kaydediliyor..." : "Kaydet"}
+              </button>
+            </div>
+            <div>
+              <h4 className="text-sm font-bold mb-2">Mevcut İçerikler ({moodContents.length})</h4>
+              <div className="space-y-2">
+                {moodContents.map((m) => (
+                  <div key={m.id} className="rounded-xl border border-primary/10 bg-card p-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex gap-2 items-center">
+                        <span className="text-[10px] font-bold uppercase bg-accent/10 text-accent-foreground px-2 py-0.5 rounded-full">{m.mood}</span>
+                        <span className={cn("text-[10px] font-bold uppercase px-2 py-0.5 rounded-full", m.type === "ayet" ? "bg-primary/10 text-primary" : "bg-gray-500/10 text-gray-500")}>{m.type}</span>
+                      </div>
+                      <button onClick={() => deleteMood(m.id)} className="text-destructive shrink-0">
+                        <span className="material-symbols-outlined text-[14px]">delete</span>
+                      </button>
+                    </div>
+                    {m.arabic_text && <p className="text-xs font-arabic mt-2" dir="rtl">{m.arabic_text.substring(0, 60)}...</p>}
+                    <p className="text-[11px] font-medium text-muted-foreground mt-1 leading-relaxed">"{m.turkish_text}"</p>
+                    {m.source && <p className="text-[10px] text-muted-foreground mt-1 text-right">— {m.source}</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ===== TEVEKKÜL VAKTİ TAB ===== */}
+        {activeTab === "tevekkul" && (
+          <div className="space-y-4">
+            <div className="rounded-xl border border-primary/10 bg-card p-4 space-y-3">
+              <h4 className="text-sm font-bold flex items-center gap-2">
+                 <span className="material-symbols-outlined text-teal-500">filter_vintage</span>
+                 Yeni Tevekkül Motivatörü Ekle
+              </h4>
+              <textarea placeholder="Motivasyon metni, ayet veya hadis *" value={tevekkulText} onChange={(e) => setTevekkulText(e.target.value)} rows={3} className="w-full rounded-lg border border-primary/10 bg-card px-3 py-2 text-sm text-foreground resize-none" />
+              <input placeholder="Kaynak (Örn: Müzzemmil 9)" value={tevekkulSource} onChange={(e) => setTevekkulSource(e.target.value)} className="w-full rounded-lg border border-primary/10 bg-card px-3 py-2 text-sm text-foreground" />
+              
+              <button onClick={handleSaveTevekkul} disabled={tevekkulSaving || !tevekkulText.trim()} className="w-full rounded-lg bg-teal-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-50">
+                {tevekkulSaving ? "Ekleniyor..." : "Tevekkül Notu Ekle"}
+              </button>
+            </div>
+            <div>
+              <h4 className="text-sm font-bold mb-2">Mevcut Liste ({tevekkulItems.length})</h4>
+              <div className="space-y-2">
+                {tevekkulItems.map((t) => (
+                  <div key={t.id} className="rounded-xl border border-teal-500/20 bg-teal-500/5 p-3 relative pr-10">
+                    <button onClick={() => deleteTevekkul(t.id)} className="absolute top-3 right-3 text-destructive hover:scale-110 transition-transform">
+                      <span className="material-symbols-outlined text-[16px]">delete</span>
+                    </button>
+                    <p className="text-xs font-semibold text-foreground/90 mt-1 leading-relaxed">"{t.content_text}"</p>
+                    {t.source && <p className="text-[10px] text-teal-600/80 mt-1.5 font-bold">— {t.source}</p>}
                   </div>
                 ))}
               </div>
@@ -1022,6 +1295,64 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
               })}
             </div>
           </div>
+        )}
+
+        {/* ===== DUALAR TAB ===== */}
+        {activeTab === "dualar" && (
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold text-foreground mb-4">Topluluk Dua İstekleri</h3>
+            
+            {dualarLoading ? (
+               <div className="py-8 text-center"><span className="material-symbols-outlined animate-spin text-primary text-2xl">sync</span></div>
+            ) : duaRequests.length === 0 ? (
+               <div className="py-8 text-center text-muted-foreground text-sm">Henüz dua isteği yok.</div>
+            ) : (
+               <div className="space-y-3">
+                 {duaRequests.map(dua => (
+                   <div key={dua.id} className={cn(
+                     "rounded-xl border p-4 shadow-sm relative",
+                     dua.is_approved ? "bg-card border-primary/20" : "bg-card/50 border-orange-500/30"
+                   )}>
+                      {!dua.is_approved && (
+                        <div className="absolute -top-2.5 -right-2.5 bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-md z-10 animate-pulse">
+                           Onay Bekliyor
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border/50">
+                        <span className="text-xs font-bold text-foreground/80">{dua.profiles?.full_name || "Gizli Kullanıcı"}</span>
+                        <span className="text-[10px] text-muted-foreground ml-auto">
+                          {new Date(dua.created_at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' })}
+                        </span>
+                      </div>
+                      
+                      <p className="text-sm font-medium leading-relaxed mb-4">"{dua.prayer_text}"</p>
+                      
+                      <div className="flex justify-end gap-2 pt-2 border-t border-border/50">
+                        <button 
+                          onClick={() => toggleDuaApproval(dua.id, dua.is_approved)}
+                          className={cn("px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5",
+                            dua.is_approved ? "bg-orange-500/10 text-orange-600 hover:bg-orange-500/20" : "bg-primary text-primary-foreground shadow-sm"
+                          )}
+                        >
+                          <span className="material-symbols-outlined text-[14px]">
+                            {dua.is_approved ? "visibility_off" : "check_circle"}
+                          </span>
+                          {dua.is_approved ? "Yayından Kaldır" : "Onayla ve Yayınla"}
+                        </button>
+                        <button 
+                          onClick={() => deleteDuaRequest(dua.id)}
+                          className="px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 text-xs font-bold transition-colors flex items-center"
+                        >
+                          <span className="material-symbols-outlined text-[14px]">delete</span>
+                        </button>
+                      </div>
+                   </div>
+                 ))}
+               </div>
+            )}
+          </div>
+        )}
+          </>
         )}
       </div>
     </div>

@@ -7,22 +7,44 @@ export function useFavorites() {
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    const load = async () => {
+    let subscription: any;
+
+    const loadSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      setUserId(session.user.id);
-      const { data } = await supabase
-        .from("favorites")
-        .select("item_id")
-        .eq("user_id", session.user.id);
-      if (data) setFavoriteIds(new Set(data.map(f => f.item_id)));
+      if (session) {
+        setUserId(session.user.id);
+        const { data } = await supabase
+          .from("favorites")
+          .select("item_id")
+          .eq("user_id", session.user.id);
+        if (data) setFavoriteIds(new Set(data.map(f => f.item_id)));
+      } else {
+        setUserId(null);
+        setFavoriteIds(new Set());
+      }
     };
-    load();
+
+    loadSession();
+
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        setUserId(session.user.id);
+        loadSession();
+      } else {
+        setUserId(null);
+        setFavoriteIds(new Set());
+      }
+    });
+
+    return () => {
+      data?.subscription?.unsubscribe();
+    };
   }, []);
 
   const toggleFavorite = useCallback(async (itemId: string, itemType: string) => {
     if (!userId) {
       toast.error("Favorilere eklemek için lütfen giriş yapın");
+      window.dispatchEvent(new CustomEvent("open-profile"));
       return false;
     }
     const isFav = favoriteIds.has(itemId);
