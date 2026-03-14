@@ -47,6 +47,59 @@ export type Database = {
         }
         Relationships: []
       }
+      dua_reactions: {
+        Row: {
+          created_at: string | null
+          id: string
+          request_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          request_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          request_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dua_reactions_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "dua_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dua_requests: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_approved: boolean | null
+          prayer_text: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_approved?: boolean | null
+          prayer_text: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_approved?: boolean | null
+          prayer_text?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       favorites: {
         Row: {
           created_at: string
@@ -138,6 +191,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      islamic_facts: {
+        Row: {
+          created_at: string | null
+          fact_text: string
+          id: string
+          source: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          fact_text: string
+          id?: string
+          source?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          fact_text?: string
+          id?: string
+          source?: string | null
+        }
+        Relationships: []
+      }
+      mood_contents: {
+        Row: {
+          arabic_text: string | null
+          created_at: string | null
+          id: string
+          mood: string
+          source: string | null
+          turkish_text: string
+          type: string
+        }
+        Insert: {
+          arabic_text?: string | null
+          created_at?: string | null
+          id?: string
+          mood: string
+          source?: string | null
+          turkish_text: string
+          type: string
+        }
+        Update: {
+          arabic_text?: string | null
+          created_at?: string | null
+          id?: string
+          mood?: string
+          source?: string | null
+          turkish_text?: string
+          type?: string
+        }
+        Relationships: []
       }
       notifications: {
         Row: {
@@ -288,6 +392,27 @@ export type Database = {
           user_display_name?: string
           user_id?: string
           youtube_url?: string | null
+        }
+        Relationships: []
+      }
+      tevekkul_vakti: {
+        Row: {
+          content_text: string
+          created_at: string | null
+          id: string
+          source: string | null
+        }
+        Insert: {
+          content_text: string
+          created_at?: string | null
+          id?: string
+          source?: string | null
+        }
+        Update: {
+          content_text?: string
+          created_at?: string | null
+          id?: string
+          source?: string | null
         }
         Relationships: []
       }
