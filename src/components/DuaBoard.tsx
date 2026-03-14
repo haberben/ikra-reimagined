@@ -92,7 +92,7 @@ export function DuaBoard() {
 
     setIsSubmitting(true);
     try {
-      const { error } = await supabase.from("dua_requests").insert({
+      const { error } = await supabase.from("dua_requests" as any).insert({
         user_id: currentUserId,
         prayer_text: newDuaText.trim(),
         is_approved: false // explicit
