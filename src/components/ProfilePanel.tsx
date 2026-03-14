@@ -471,7 +471,7 @@ export default function ProfilePanel({ onClose }: AdminPanelProps) {
   const handleSaveFact = async () => {
     if (!factText.trim()) return;
     setFactSaving(true);
-    await supabase.from("islamic_facts").insert({
+    await supabase.from("islamic_facts" as any).insert({
       fact_text: factText.trim(),
       source: factSource.trim() || null
     } as any);
