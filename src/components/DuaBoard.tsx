@@ -38,10 +38,9 @@ export function DuaBoard() {
     try {
       // 1. Get approved duas
       const { data: requestsData, error: reqError } = await supabase
-        .from("dua_requests")
+        .from("dua_requests" as any)
         .select(`
-          id, user_id, prayer_text, is_approved, created_at,
-          profiles ( full_name, avatar_url )
+          id, user_id, prayer_text, is_approved, created_at
         `)
         .eq("is_approved", true)
         .order("created_at", { ascending: false })
@@ -49,21 +48,18 @@ export function DuaBoard() {
 
       if (reqError) throw reqError;
 
-      // 2. Get reaction counts and user's specific reactions
-      // Workaround because we can't easily do nested aggregate counts in a single standard supabase-js v2 query without an RPC
-      const requestIds = requestsData?.map(r => r.id) || [];
+      const requestIds = (requestsData as any[])?.map((r: any) => r.id) || [];
       
       let allReactions: any[] = [];
       if (requestIds.length > 0) {
          const { data: rxData } = await supabase
-           .from("dua_reactions")
+           .from("dua_reactions" as any)
            .select("request_id, user_id")
            .in("request_id", requestIds);
-         allReactions = rxData || [];
+         allReactions = (rxData as any[]) || [];
       }
 
-      // 3. Map it all together
-      const enriched = (requestsData || []).map(r => {
+      const enriched = ((requestsData as any[]) || []).map((r: any) => {
         const reactionsForThis = allReactions.filter(x => x.request_id === r.id);
         const hasReacted = currentUserId ? reactionsForThis.some(x => x.user_id === currentUserId) : false;
         
@@ -96,7 +92,7 @@ export function DuaBoard() {
 
     setIsSubmitting(true);
     try {
-      const { error } = await supabase.from("dua_requests").insert({
+      const { error } = await supabase.from("dua_requests" as any).insert({
         user_id: currentUserId,
         prayer_text: newDuaText.trim(),
         is_approved: false // explicit
@@ -133,14 +129,12 @@ export function DuaBoard() {
 
     try {
       if (hasReacted) {
-        // Remove reaction
-        await supabase.from("dua_reactions")
+        await supabase.from("dua_reactions" as any)
           .delete()
           .eq("request_id", duaId)
           .eq("user_id", currentUserId);
       } else {
-        // Add reaction
-        await supabase.from("dua_reactions")
+        await supabase.from("dua_reactions" as any)
           .insert({ request_id: duaId, user_id: currentUserId });
       }
     } catch (e) {

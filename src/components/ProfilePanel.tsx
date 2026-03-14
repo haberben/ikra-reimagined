@@ -464,14 +464,14 @@ export default function ProfilePanel({ onClose }: AdminPanelProps) {
 
   // ============ FACTS ============
   const fetchFacts = async () => {
-    const { data } = await supabase.from("islamic_facts").select("*").order("created_at", { ascending: false });
+    const { data } = await supabase.from("islamic_facts" as any).select("*").order("created_at", { ascending: false });
     if (data) setFacts(data);
   };
 
   const handleSaveFact = async () => {
     if (!factText.trim()) return;
     setFactSaving(true);
-    await supabase.from("islamic_facts").insert({
+    await supabase.from("islamic_facts" as any).insert({
       fact_text: factText.trim(),
       source: factSource.trim() || null
     } as any);
@@ -482,20 +482,20 @@ export default function ProfilePanel({ onClose }: AdminPanelProps) {
   };
 
   const deleteFact = async (id: string) => {
-    await supabase.from("islamic_facts").delete().eq("id", id);
+    await supabase.from("islamic_facts" as any).delete().eq("id", id);
     fetchFacts();
   };
 
   // ============ MOODS ============
   const fetchMoods = async () => {
-    const { data } = await supabase.from("mood_contents").select("*").order("created_at", { ascending: false });
+    const { data } = await supabase.from("mood_contents" as any).select("*").order("created_at", { ascending: false });
     if (data) setMoodContents(data);
   };
 
   const handleSaveMood = async () => {
     if (!moodTurkish.trim()) return;
     setMoodSaving(true);
-    await supabase.from("mood_contents").insert({
+    await supabase.from("mood_contents" as any).insert({
       mood: moodCategory,
       type: moodType,
       turkish_text: moodTurkish.trim(),
@@ -508,20 +508,20 @@ export default function ProfilePanel({ onClose }: AdminPanelProps) {
   };
 
   const deleteMood = async (id: string) => {
-    await supabase.from("mood_contents").delete().eq("id", id);
+    await supabase.from("mood_contents" as any).delete().eq("id", id);
     fetchMoods();
   };
 
   // ============ TEVEKKÜL VAKTİ ============
   const fetchTevekkul = async () => {
-    const { data } = await supabase.from("tevekkul_vakti").select("*").order("created_at", { ascending: false });
+    const { data } = await supabase.from("tevekkul_vakti" as any).select("*").order("created_at", { ascending: false });
     if (data) setTevekkulItems(data);
   };
 
   const handleSaveTevekkul = async () => {
     if (!tevekkulText.trim()) return;
     setTevekkulSaving(true);
-    await supabase.from("tevekkul_vakti").insert({
+    await supabase.from("tevekkul_vakti" as any).insert({
       content_text: tevekkulText.trim(),
       source: tevekkulSource.trim() || null
     } as any);
@@ -531,7 +531,7 @@ export default function ProfilePanel({ onClose }: AdminPanelProps) {
   };
 
   const deleteTevekkul = async (id: string) => {
-    await supabase.from("tevekkul_vakti").delete().eq("id", id);
+    await supabase.from("tevekkul_vakti" as any).delete().eq("id", id);
     fetchTevekkul();
   };
 
@@ -606,7 +606,7 @@ export default function ProfilePanel({ onClose }: AdminPanelProps) {
   const fetchDuaRequests = async () => {
     setDualarLoading(true);
     const { data } = await supabase
-      .from("dua_requests")
+       .from("dua_requests" as any)
       .select(`
         id, user_id, prayer_text, is_approved, created_at,
         profiles ( full_name, avatar_url )
@@ -617,13 +617,13 @@ export default function ProfilePanel({ onClose }: AdminPanelProps) {
   };
 
   const toggleDuaApproval = async (id: string, currentStatus: boolean) => {
-    await supabase.from("dua_requests").update({ is_approved: !currentStatus }).eq("id", id);
+    await supabase.from("dua_requests" as any).update({ is_approved: !currentStatus } as any).eq("id", id);
     fetchDuaRequests();
   };
 
   const deleteDuaRequest = async (id: string) => {
     if (!window.confirm("Bu dua isteğini silmek istediğinizden emin misiniz?")) return;
-    await supabase.from("dua_requests").delete().eq("id", id);
+    await supabase.from("dua_requests" as any).delete().eq("id", id);
     fetchDuaRequests();
   };
 

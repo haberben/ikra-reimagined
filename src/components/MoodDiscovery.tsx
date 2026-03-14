@@ -23,7 +23,7 @@ export function MoodDiscovery() {
 
     try {
       const { data, error } = await supabase
-        .from("mood_contents")
+        .from("mood_contents" as any)
         .select("*")
         .eq("mood", moodId);
 
