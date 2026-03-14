@@ -617,7 +617,7 @@ export default function ProfilePanel({ onClose }: AdminPanelProps) {
   };
 
   const toggleDuaApproval = async (id: string, currentStatus: boolean) => {
-    await supabase.from("dua_requests").update({ is_approved: !currentStatus }).eq("id", id);
+    await supabase.from("dua_requests" as any).update({ is_approved: !currentStatus } as any).eq("id", id);
     fetchDuaRequests();
   };
 
