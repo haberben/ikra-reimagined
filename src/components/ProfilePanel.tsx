@@ -671,13 +671,13 @@ export default function ProfilePanel({ onClose }: AdminPanelProps) {
   }
 
   const TABS: { key: AdminTab; label: string; icon: string; adminOnly?: boolean }[] = [
+    { key: "dualar", label: "Dualar", icon: "diversity_1" },
+    { key: "tevekkul", label: "Tevekkül", icon: "filter_vintage" },
+    { key: "moods", label: "Duygular", icon: "self_improvement" },
+    { key: "facts", label: "Günün Bilgisi", icon: "lightbulb" },
     { key: "wallpaper", label: "Duvar Kağıdı", icon: "wallpaper" },
     { key: "daily", label: "Ayet/Hadis", icon: "menu_book" },
     { key: "video", label: "Videolar", icon: "video_library" },
-    { key: "facts", label: "Günün Bilgisi", icon: "lightbulb" },
-    { key: "moods", label: "Duygular", icon: "self_improvement" },
-    { key: "tevekkul", label: "Tevekkül", icon: "filter_vintage" },
-    { key: "dualar", label: "Dualar", icon: "diversity_1" },
     { key: "notifications", label: "Bildirimler", icon: "notifications" },
     { key: "suggestions", label: "Öneriler", icon: "lightbulb" },
     { key: "users", label: "Kullanıcılar", icon: "group", adminOnly: true },

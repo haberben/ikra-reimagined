@@ -14,22 +14,16 @@ export function TevekkulVakti() {
   const [loading, setLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
 
-  useEffect(() => {
-    // Check if user has already opened the daily quote
-    const lastOpened = localStorage.getItem("ikra_tevekkul_opened");
-    const today = new Date().toISOString().split("T")[0];
+  const [allItems, setAllItems] = useState<TevekkulData[]>([]);
 
-    const fetchQuote = async () => {
+  useEffect(() => {
+    const fetchQuotes = async () => {
       try {
-        const { data, error } = await supabase
-          .from("tevekkul_vakti")
-          .select("*");
-        
+        const { data, error } = await supabase.from("tevekkul_vakti").select("*");
         if (error) throw error;
         
         if (data && data.length > 0) {
-          // In a real app, this could be strictly controlled by the date, 
-          // but for now randomly select one so it's fresh every time we need one
+          setAllItems(data);
           const randomItem = data[Math.floor(Math.random() * data.length)];
           setContent(randomItem);
         }
@@ -39,14 +33,22 @@ export function TevekkulVakti() {
         setLoading(false);
       }
     };
-
-    fetchQuote();
+    fetchQuotes();
   }, []);
 
   const handleOpenClick = () => {
-    const today = new Date().toISOString().split("T")[0];
-    localStorage.setItem("ikra_tevekkul_opened", today);
+    if (allItems.length > 0) {
+      const randomItem = allItems[Math.floor(Math.random() * allItems.length)];
+      setContent(randomItem);
+    }
     setIsOpen(true);
+  };
+
+  const handleNextQuote = () => {
+    if (allItems.length > 0) {
+      const randomItem = allItems[Math.floor(Math.random() * allItems.length)];
+      setContent(randomItem);
+    }
   };
 
   const handleShare = async () => {
@@ -120,8 +122,12 @@ export function TevekkulVakti() {
                  </p>
               )}
 
-              <div className="mt-16">
-                 <button onClick={handleShare} className="mx-auto flex items-center justify-center gap-2 rounded-xl bg-teal-600/10 hover:bg-teal-600/20 border border-teal-600/20 px-8 py-4 text-sm font-bold text-teal-600 transition-all active:scale-95 shadow-lg shadow-teal-500/5">
+              <div className="mt-12 space-y-3">
+                 <button onClick={handleNextQuote} className="w-full mx-auto flex items-center justify-center gap-2 rounded-xl bg-teal-600 px-8 py-4 text-sm font-bold text-white transition-all active:scale-95 shadow-lg shadow-teal-500/20">
+                    <span className="material-symbols-outlined">refresh</span>
+                    Başka Bir Söz Oku
+                 </button>
+                 <button onClick={handleShare} className="w-full mx-auto flex items-center justify-center gap-2 rounded-xl bg-teal-600/10 hover:bg-teal-600/20 border border-teal-600/20 px-8 py-4 text-sm font-bold text-teal-600 transition-all active:scale-95 shadow-lg shadow-teal-500/5">
                     <span className="material-symbols-outlined">share</span>
                     Bu Güzelliği Paylaş
                  </button>

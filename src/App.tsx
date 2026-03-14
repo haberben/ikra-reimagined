@@ -229,7 +229,7 @@ const App = () => {
       case "hatim":
         return <HatimPage onMenuOpen={handleMenuOpen} onNotifications={handleNotifications} />;
       case "dualar":
-        return <DualarPage />;
+        return <DualarPage onMenuOpen={handleMenuOpen} onNotifications={handleNotifications} />;
       default:
         return <HomePage city={city} onNavigate={setActiveTab} onNotifications={handleNotifications} onZikirmatik={handleZikirmatik} onMenuOpen={handleMenuOpen} />;
     }
