@@ -19,12 +19,12 @@ export function TevekkulVakti() {
   useEffect(() => {
     const fetchQuotes = async () => {
       try {
-        const { data, error } = await supabase.from("tevekkul_vakti").select("*");
+        const { data, error } = await supabase.from("tevekkul_vakti" as any).select("*");
         if (error) throw error;
         
-        if (data && data.length > 0) {
-          setAllItems(data);
-          const randomItem = data[Math.floor(Math.random() * data.length)];
+        if (data && (data as any[]).length > 0) {
+          setAllItems(data as any[]);
+          const randomItem = (data as any[])[Math.floor(Math.random() * (data as any[]).length)];
           setContent(randomItem);
         }
       } catch (err) {

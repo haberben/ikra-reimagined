@@ -129,14 +129,12 @@ export function DuaBoard() {
 
     try {
       if (hasReacted) {
-        // Remove reaction
-        await supabase.from("dua_reactions")
+        await supabase.from("dua_reactions" as any)
           .delete()
           .eq("request_id", duaId)
           .eq("user_id", currentUserId);
       } else {
-        // Add reaction
-        await supabase.from("dua_reactions")
+        await supabase.from("dua_reactions" as any)
           .insert({ request_id: duaId, user_id: currentUserId });
       }
     } catch (e) {

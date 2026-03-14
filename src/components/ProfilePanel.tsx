@@ -623,7 +623,7 @@ export default function ProfilePanel({ onClose }: AdminPanelProps) {
 
   const deleteDuaRequest = async (id: string) => {
     if (!window.confirm("Bu dua isteğini silmek istediğinizden emin misiniz?")) return;
-    await supabase.from("dua_requests").delete().eq("id", id);
+    await supabase.from("dua_requests" as any).delete().eq("id", id);
     fetchDuaRequests();
   };
 

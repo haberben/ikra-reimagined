@@ -27,14 +27,14 @@ export function DailyFactCard() {
     const fetchFact = async () => {
       try {
         const { data, error } = await supabase
-          .from("islamic_facts")
+          .from("islamic_facts" as any)
           .select("*");
         
         if (error) throw error;
         
         if (data && data.length > 0) {
           // Select a random fact for today
-          const randomFact = data[Math.floor(Math.random() * data.length)];
+          const randomFact = data[Math.floor(Math.random() * data.length)] as any;
           setFact(randomFact);
         }
       } catch (err) {
