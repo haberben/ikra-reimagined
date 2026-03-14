@@ -531,7 +531,7 @@ export default function ProfilePanel({ onClose }: AdminPanelProps) {
   };
 
   const deleteTevekkul = async (id: string) => {
-    await supabase.from("tevekkul_vakti").delete().eq("id", id);
+    await supabase.from("tevekkul_vakti" as any).delete().eq("id", id);
     fetchTevekkul();
   };
 
