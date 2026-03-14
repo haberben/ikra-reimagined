@@ -514,7 +514,7 @@ export default function ProfilePanel({ onClose }: AdminPanelProps) {
 
   // ============ TEVEKKÜL VAKTİ ============
   const fetchTevekkul = async () => {
-    const { data } = await supabase.from("tevekkul_vakti").select("*").order("created_at", { ascending: false });
+    const { data } = await supabase.from("tevekkul_vakti" as any).select("*").order("created_at", { ascending: false });
     if (data) setTevekkulItems(data);
   };
 
