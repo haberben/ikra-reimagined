@@ -9,6 +9,7 @@ import {
   scheduleDailyContentNotification,
   getNotifSoundPref,
   setNotifSoundPref,
+  managePersistentNotification,
   type NotifSound,
 } from "@/lib/notifications";
 
@@ -55,6 +56,10 @@ export default function NotificationsPage({ onBack }: { onBack: () => void }) {
   const [expandedNotif, setExpandedNotif] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [permissionStatus, setPermissionStatus] = useState<string>(getNotificationPermission());
+  
+  const [persistentEnabled, setPersistentEnabled] = useState<boolean>(() => {
+    try { return JSON.parse(localStorage.getItem("ikra_persistent_notif") || "false"); } catch { return false; }
+  });
 
   useEffect(() => {
     fetchAdminNotifs();
@@ -89,6 +94,25 @@ export default function NotificationsPage({ onBack }: { onBack: () => void }) {
       scheduleDailyContentNotification('hadis', 8, 0);
     }
   }, [dailyNotifs]);
+
+  // Manage persistent notification when toggle or times change
+  useEffect(() => {
+    localStorage.setItem("ikra_persistent_notif", JSON.stringify(persistentEnabled));
+    const city = localStorage.getItem("ikra_city") || "İstanbul";
+
+    if (persistentEnabled) {
+      fetch(`https://api.aladhan.com/v1/timingsByCity?city=${encodeURIComponent(city)}&country=TR&method=13`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.code === 200) {
+            managePersistentNotification(true, data.data.timings);
+          }
+        })
+        .catch(console.error);
+    } else {
+      managePersistentNotification(false, null);
+    }
+  }, [persistentEnabled]);
 
   const fetchAdminNotifs = async () => {
     // Only fetch notifications created within the last 24 hours
@@ -147,6 +171,17 @@ export default function NotificationsPage({ onBack }: { onBack: () => void }) {
     }
     setDailyNotifs({ ...dailyNotifs, [key]: newVal });
   };
+
+  const handleTogglePersistent = async () => {
+    const newVal = !persistentEnabled;
+    if (newVal && permissionStatus !== 'granted') {
+      const granted = await requestNotificationPermission();
+      setPermissionStatus(granted ? 'granted' : 'denied');
+      if (!granted) return;
+    }
+    setPersistentEnabled(newVal);
+  };
+
 
   const handleSoundChange = (sound: NotifSound) => {
     setSelectedSound(sound);
@@ -240,6 +275,34 @@ export default function NotificationsPage({ onBack }: { onBack: () => void }) {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Kalıcı Vakit Bildirimi (Android) */}
+        <h3 className="mt-6 mb-3 text-sm font-bold uppercase tracking-wider text-primary">
+          Android Kilit/Bildirim Ekranı Vakti
+        </h3>
+        <div className="space-y-2 mb-2">
+          <div className="flex items-center justify-between rounded-xl border border-primary/10 bg-card px-4 py-3 shadow-sm">
+            <div className="flex items-center gap-3">
+              <span className="material-symbols-outlined text-primary">push_pin</span>
+              <div>
+                <span className="font-medium">Vakitleri Kalıcı Göster</span>
+                <p className="text-[10px] text-muted-foreground mr-2">Cihazın bildirim çubuğunda sıradaki vakti ve kalan süreyi kalıcı olarak gösterir (Android 8+).</p>
+              </div>
+            </div>
+            <button
+              onClick={handleTogglePersistent}
+              className={cn(
+                "h-[31px] w-[51px] rounded-full transition-colors flex-shrink-0",
+                persistentEnabled ? "bg-primary" : "bg-muted"
+              )}
+            >
+              <div className={cn(
+                "h-[27px] w-[27px] rounded-full bg-card shadow transition-transform",
+                persistentEnabled ? "translate-x-[22px]" : "translate-x-[2px]"
+              )} />
+            </button>
+          </div>
         </div>
 
         {/* Günlük İçerik Bildirimleri */}

@@ -83,6 +83,8 @@ export async function scheduleLocalNotification(
             smallIcon: "ic_stat_icon_config_sample",
             iconColor: "#1a8a4a",
             ...(sound === "silent" ? { extra: { silent: "true" } } : {}),
+            ongoing: tag === "persistent",  // If the tag is persistent, make it sticky
+            autoCancel: tag !== "persistent", // Don't auto-dismiss sticky ones
           },
         ],
       });
@@ -124,6 +126,95 @@ export async function cancelScheduledNotification(timerId: number) {
     return;
   }
   window.clearTimeout(timerId);
+}
+
+// Persistent "Ezan Vakti" countdown for Android
+let persistentInterval: any = null;
+const PERSISTENT_NOTIF_ID = 99999;
+
+export async function managePersistentNotification(
+  enabled: boolean, 
+  times: Record<string, string> | null
+) {
+  if (!isNative()) return; // Only relevant for Android/iOS native
+
+  try {
+    const { LocalNotifications } = await import("@capacitor/local-notifications");
+
+    // If disabled or no times, clear everything
+    if (!enabled || !times) {
+      if (persistentInterval) clearInterval(persistentInterval);
+      await LocalNotifications.cancel({ notifications: [{ id: PERSISTENT_NOTIF_ID }] });
+      return;
+    }
+
+    // Clear any existing interval to prevent duplicates
+    if (persistentInterval) clearInterval(persistentInterval);
+
+    const updateNotif = async () => {
+      if (!times || !times.Imsak) return;
+
+      const now = new Date();
+      const currentH = now.getHours();
+      const currentM = now.getMinutes();
+      const nowMinutes = currentH * 60 + currentM;
+
+      const timeArray = [
+        { key: "Imsak", label: "İmsak", time: times.Imsak },
+        { key: "Sunrise", label: "Güneş", time: times.Sunrise },
+        { key: "Dhuhr", label: "Öğle", time: times.Dhuhr },
+        { key: "Asr", label: "İkindi", time: times.Asr },
+        { key: "Maghrib", label: "Akşam", time: times.Maghrib },
+        { key: "Isha", label: "Yatsı", time: times.Isha },
+      ];
+
+      const toMinutes = (timeStr: string) => {
+        const [h, m] = timeStr.split(':').map(Number);
+        return h * 60 + m;
+      };
+
+      let nextPrayer = timeArray[0];
+
+      for (let i = 0; i < timeArray.length; i++) {
+        if (nowMinutes < toMinutes(timeArray[i].time)) {
+          nextPrayer = timeArray[i];
+          break;
+        }
+      }
+
+      const nextTime = toMinutes(nextPrayer.time);
+      let diff = nextTime - nowMinutes;
+      if (diff < 0) diff += 24 * 60; // Next day's Imsak
+      
+      const h = Math.floor(diff / 60);
+      const m = diff % 60;
+      
+      const timeRemaining = h > 0 ? `${h} Saat ${m} Dakika Kaldı` : `${m} Dakika Kaldı`;
+
+      await LocalNotifications.schedule({
+        notifications: [
+          {
+            title: `Sıradaki Vakit: ${nextPrayer.label} (${nextPrayer.time})`,
+            body: timeRemaining,
+            id: PERSISTENT_NOTIF_ID,
+            schedule: { at: new Date(Date.now() + 1000) }, // Schedule immediately
+            smallIcon: "ic_stat_icon_config_sample",
+            iconColor: "#1a8a4a",
+            ongoing: true, // Sticky notification
+            autoCancel: false,
+            sound: undefined, // Silent update
+          },
+        ],
+      });
+    };
+
+    // Run once immediately, then every 1 minute
+    await updateNotif();
+    persistentInterval = setInterval(updateNotif, 60000);
+
+  } catch (e) {
+    console.error("Persistent notification error:", e);
+  }
 }
 
 // Cancel all pending native notifications
