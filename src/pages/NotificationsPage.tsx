@@ -10,6 +10,7 @@ import {
   getNotifSoundPref,
   setNotifSoundPref,
   managePersistentNotification,
+  scheduleTevekkulNotification,
   type NotifSound,
 } from "@/lib/notifications";
 
@@ -92,6 +93,9 @@ export default function NotificationsPage({ onBack }: { onBack: () => void }) {
     }
     if (dailyNotifs.hadis) {
       scheduleDailyContentNotification('hadis', 8, 0);
+    }
+    if (dailyNotifs.tevekkul) {
+      scheduleTevekkulNotification(16, 0); // 16:00
     }
   }, [dailyNotifs]);
 
@@ -328,6 +332,27 @@ export default function NotificationsPage({ onBack }: { onBack: () => void }) {
               <div className={cn(
                 "h-[27px] w-[27px] rounded-full bg-card shadow transition-transform",
                 dailyNotifs.ayet ? "translate-x-[22px]" : "translate-x-[2px]"
+              )} />
+            </button>
+          </div>
+          <div className="flex items-center justify-between rounded-xl border border-primary/10 bg-card px-4 py-3 shadow-sm">
+            <div className="flex items-center gap-3">
+              <span className="material-symbols-outlined text-primary">sparkles</span>
+              <div>
+                <span className="font-medium">Tevekkül Vakti</span>
+                <p className="text-[10px] text-muted-foreground">Her gün 16:00'da (İkindi vakti)</p>
+              </div>
+            </div>
+            <button
+              onClick={() => handleToggleDailyNotif("tevekkul")}
+              className={cn(
+                "h-[31px] w-[51px] rounded-full transition-colors",
+                dailyNotifs.tevekkul ? "bg-primary" : "bg-muted"
+              )}
+            >
+              <div className={cn(
+                "h-[27px] w-[27px] rounded-full bg-card shadow transition-transform",
+                dailyNotifs.tevekkul ? "translate-x-[22px]" : "translate-x-[2px]"
               )} />
             </button>
           </div>

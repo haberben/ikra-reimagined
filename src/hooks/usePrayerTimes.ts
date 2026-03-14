@@ -64,8 +64,7 @@ export function useCurrentPrayer(times: PrayerTimesData | null) {
       const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
       const prayerOrder = [
-        { key: "Imsak", name: "İmsak", label: "Fajr" },
-        { key: "Fajr", name: "Sabah", label: "Fajr" },
+        { key: "Fajr", name: "İmsak", label: "Fajr" }, // Aladhan's Fajr is Diyanet's Imsak
         { key: "Sunrise", name: "Güneş", label: "Sunrise" },
         { key: "Dhuhr", name: "Öğle", label: "Dhuhr" },
         { key: "Asr", name: "İkindi", label: "Asr" },

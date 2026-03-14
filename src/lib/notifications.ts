@@ -160,7 +160,7 @@ export async function managePersistentNotification(
       const nowMinutes = currentH * 60 + currentM;
 
       const timeArray = [
-        { key: "Imsak", label: "İmsak", time: times.Imsak },
+        { key: "Imsak", label: "İmsak", time: times.Fajr },
         { key: "Sunrise", label: "Güneş", time: times.Sunrise },
         { key: "Dhuhr", label: "Öğle", time: times.Dhuhr },
         { key: "Asr", label: "İkindi", time: times.Asr },
@@ -215,6 +215,45 @@ export async function managePersistentNotification(
   } catch (e) {
     console.error("Persistent notification error:", e);
   }
+}
+
+// Schedule daily tevekkul notification
+export async function scheduleTevekkulNotification(
+  hour: number,
+  minute: number
+): Promise<number | null> {
+  const now = new Date();
+  const target = new Date(now);
+  target.setHours(hour, minute, 0, 0);
+
+  if (target.getTime() <= now.getTime()) {
+    target.setDate(target.getDate() + 1);
+  }
+
+  const delay = target.getTime() - now.getTime();
+  
+  try {
+    const { data } = await supabase.from('tevekkul_vakti').select('*');
+    if (data && data.length > 0) {
+      const randomContent = data[Math.floor(Math.random() * data.length)];
+      
+      let bodyText = randomContent.content_text;
+      if (randomContent.source) {
+        bodyText += `\n\n— ${randomContent.source}`;
+      }
+
+      return await scheduleLocalNotification(
+        "✨ Tevekkül Vakti",
+        bodyText,
+        delay,
+        "daily-tevekkul"
+      );
+    }
+  } catch (e) {
+    console.error("Failed to fetch Tevekkül content for notification", e);
+  }
+
+  return null;
 }
 
 // Cancel all pending native notifications
