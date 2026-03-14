@@ -488,7 +488,7 @@ export default function ProfilePanel({ onClose }: AdminPanelProps) {
 
   // ============ MOODS ============
   const fetchMoods = async () => {
-    const { data } = await supabase.from("mood_contents").select("*").order("created_at", { ascending: false });
+    const { data } = await supabase.from("mood_contents" as any).select("*").order("created_at", { ascending: false });
     if (data) setMoodContents(data);
   };
 
