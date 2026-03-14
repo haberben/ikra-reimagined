@@ -495,7 +495,7 @@ export default function ProfilePanel({ onClose }: AdminPanelProps) {
   const handleSaveMood = async () => {
     if (!moodTurkish.trim()) return;
     setMoodSaving(true);
-    await supabase.from("mood_contents").insert({
+    await supabase.from("mood_contents" as any).insert({
       mood: moodCategory,
       type: moodType,
       turkish_text: moodTurkish.trim(),
