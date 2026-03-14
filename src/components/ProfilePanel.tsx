@@ -606,7 +606,7 @@ export default function ProfilePanel({ onClose }: AdminPanelProps) {
   const fetchDuaRequests = async () => {
     setDualarLoading(true);
     const { data } = await supabase
-      .from("dua_requests")
+       .from("dua_requests" as any)
       .select(`
         id, user_id, prayer_text, is_approved, created_at,
         profiles ( full_name, avatar_url )
