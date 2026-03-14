@@ -521,7 +521,7 @@ export default function ProfilePanel({ onClose }: AdminPanelProps) {
   const handleSaveTevekkul = async () => {
     if (!tevekkulText.trim()) return;
     setTevekkulSaving(true);
-    await supabase.from("tevekkul_vakti").insert({
+    await supabase.from("tevekkul_vakti" as any).insert({
       content_text: tevekkulText.trim(),
       source: tevekkulSource.trim() || null
     } as any);
