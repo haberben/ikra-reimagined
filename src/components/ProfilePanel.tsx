@@ -508,7 +508,7 @@ export default function ProfilePanel({ onClose }: AdminPanelProps) {
   };
 
   const deleteMood = async (id: string) => {
-    await supabase.from("mood_contents").delete().eq("id", id);
+    await supabase.from("mood_contents" as any).delete().eq("id", id);
     fetchMoods();
   };
 
