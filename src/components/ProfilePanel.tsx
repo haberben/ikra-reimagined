@@ -464,7 +464,7 @@ export default function ProfilePanel({ onClose }: AdminPanelProps) {
 
   // ============ FACTS ============
   const fetchFacts = async () => {
-    const { data } = await supabase.from("islamic_facts").select("*").order("created_at", { ascending: false });
+    const { data } = await supabase.from("islamic_facts" as any).select("*").order("created_at", { ascending: false });
     if (data) setFacts(data);
   };
 
