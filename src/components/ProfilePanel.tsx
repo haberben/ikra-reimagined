@@ -482,7 +482,7 @@ export default function ProfilePanel({ onClose }: AdminPanelProps) {
   };
 
   const deleteFact = async (id: string) => {
-    await supabase.from("islamic_facts").delete().eq("id", id);
+    await supabase.from("islamic_facts" as any).delete().eq("id", id);
     fetchFacts();
   };
 
