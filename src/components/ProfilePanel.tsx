@@ -605,13 +605,13 @@ export default function ProfilePanel({ onClose }: AdminPanelProps) {
   // ============ DUA REQUESTS ============
   const fetchDuaRequests = async () => {
     setDualarLoading(true);
-    const { data } = await supabase
+    const { data, error } = await supabase
        .from("dua_requests" as any)
       .select(`
-        id, user_id, prayer_text, is_approved, created_at,
-        profiles ( full_name, avatar_url )
+        id, user_id, prayer_text, is_approved, created_at
       `)
       .order("created_at", { ascending: false });
+    if (error) console.error("fetchDuaRequests error:", error);
     if (data) setDuaRequests(data);
     setDualarLoading(false);
   };
