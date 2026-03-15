@@ -7,6 +7,7 @@ const MOODS = [
   { id: "Stresli", label: "Stresli", icon: "mood_bad", color: "text-orange-500", bg: "bg-orange-500/10", border: "border-orange-500/20" },
   { id: "Şükreden", label: "Şükreden", icon: "volunteer_activism", color: "text-green-500", bg: "bg-green-500/10", border: "border-green-500/20" },
   { id: "Kararsız", label: "Kararsız", icon: "device_unknown", color: "text-purple-500", bg: "bg-purple-500/10", border: "border-purple-500/20" },
+  { id: "Umutsuz", label: "Umutsuz", icon: "cloud_off", color: "text-indigo-500", bg: "bg-indigo-500/10", border: "border-indigo-500/20" },
   { id: "Yalnız", label: "Yalnız", icon: "person", color: "text-gray-500", bg: "bg-gray-500/10", border: "border-gray-500/20" },
   { id: "Öfkeli", label: "Öfkeli", icon: "local_fire_department", color: "text-red-500", bg: "bg-red-500/10", border: "border-red-500/20" },
 ];
