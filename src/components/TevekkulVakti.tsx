@@ -13,8 +13,8 @@ export function TevekkulVakti() {
   const [content, setContent] = useState<TevekkulData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
-
-  const [allItems, setAllItems] = useState<TevekkulData[]>([]);
+  const lastShownIdRef = React.useRef<string | null>(null);
+  const [allItems, setAllItems] = useState<TevekkulData[]>();
 
   useEffect(() => {
     const fetchQuotes = async () => {
@@ -36,18 +36,29 @@ export function TevekkulVakti() {
     fetchQuotes();
   }, []);
 
+  const pickRandom = (items: TevekkulData[]) => {
+    if (items.length === 0) return null;
+    if (items.length === 1) return items[0];
+    // Avoid repeating the last shown
+    const filtered = items.filter(i => i.id !== lastShownIdRef.current);
+    const pool = filtered.length > 0 ? filtered : items;
+    const picked = pool[Math.floor(Math.random() * pool.length)];
+    lastShownIdRef.current = picked.id;
+    return picked;
+  };
+
   const handleOpenClick = () => {
     if (allItems.length > 0) {
-      const randomItem = allItems[Math.floor(Math.random() * allItems.length)];
-      setContent(randomItem);
+      const picked = pickRandom(allItems);
+      if (picked) setContent(picked);
     }
     setIsOpen(true);
   };
 
   const handleNextQuote = () => {
     if (allItems.length > 0) {
-      const randomItem = allItems[Math.floor(Math.random() * allItems.length)];
-      setContent(randomItem);
+      const picked = pickRandom(allItems);
+      if (picked) setContent(picked);
     }
   };
 

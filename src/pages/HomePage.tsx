@@ -59,7 +59,7 @@ const HIJRI_MONTHS_TR: Record<string, string> = {
 const DISCOVER_ITEMS = [
   { icon: "auto_stories", label: "Hatim", action: "tab:hatim" },
   { icon: "wallpaper", label: "Duvar Kağıdı", action: "tab:gallery" },
-  { icon: "explore", label: "Kıble Bulucu", action: "tab:times" },
+  { icon: "explore", label: "Kıble Yönü", action: "tab:times" },
   { icon: "counter_1", label: "Zikirmatik", action: "zikirmatik" },
 ];
 
@@ -73,7 +73,7 @@ export default function HomePage({ city, onNavigate, onNotifications, onZikirmat
 
   const miniPrayers = times
     ? [
-        { key: "Imsak", time: times.Imsak },
+        { key: "Imsak", time: times.Fajr }, // Aladhan Fajr = Diyanet İmsak (Diyanet doesn't use a separate 10-min-early Imsak)
         { key: "Sunrise", time: times.Sunrise },
         { key: "Dhuhr", time: times.Dhuhr },
         { key: "Asr", time: times.Asr },

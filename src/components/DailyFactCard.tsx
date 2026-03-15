@@ -15,9 +15,10 @@ export function DailyFactCard() {
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
+    const today = new Date().toISOString().split("T")[0];
+
     // Check if dismissed today
     const lastDismissed = localStorage.getItem("ikra_fact_dismissed_date");
-    const today = new Date().toISOString().split("T")[0];
     if (lastDismissed === today) {
       setDismissed(true);
       setLoading(false);
@@ -32,10 +33,22 @@ export function DailyFactCard() {
         
         if (error) throw error;
         
-        if (data && data.length > 0) {
-          // Select a random fact for today
-          const randomFact = data[Math.floor(Math.random() * data.length)] as any;
-          setFact(randomFact);
+        if (data && (data as any[]).length > 0) {
+          // Check if we already picked today's fact (for consistency across app opens)
+          const savedFactId = localStorage.getItem(`ikra_fact_id_${today}`);
+          let todayFact: any;
+
+          if (savedFactId) {
+            todayFact = (data as any[]).find((d: any) => d.id === savedFactId);
+          }
+
+          if (!todayFact) {
+            // Pick a new random one and save it for today
+            todayFact = (data as any[])[Math.floor(Math.random() * (data as any[]).length)];
+            localStorage.setItem(`ikra_fact_id_${today}`, todayFact.id);
+          }
+
+          setFact(todayFact);
         }
       } catch (err) {
         console.error("Bilgi çekilemedi:", err);

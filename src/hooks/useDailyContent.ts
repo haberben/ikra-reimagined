@@ -18,11 +18,15 @@ export function useDailyContent() {
 
   useEffect(() => {
     const today = new Date().toISOString().split("T")[0];
+    // Day-of-year index for consistent daily rotation
+    const now = new Date();
+    const start = new Date(now.getFullYear(), 0, 0);
+    const dayOfYear = Math.floor((now.getTime() - start.getTime()) / 86400000);
 
     const fetchContent = async () => {
       setLoading(true);
 
-      // Try today's content first
+      // Try today's date-specific content first
       const { data } = await supabase
         .from("daily_content")
         .select("*")
@@ -35,25 +39,25 @@ export function useDailyContent() {
         return;
       }
 
-      // Fallback: get most recent content (for days without specific content)
-      const { data: recentAyet } = await supabase
+      // Fallback: fetch ALL records and rotate by day (covers dateless seed records)
+      const { data: allAyets } = await supabase
         .from("daily_content")
         .select("*")
         .eq("type", "ayet")
-        .lte("date", today)
-        .order("date", { ascending: false })
-        .limit(1);
+        .order("created_at", { ascending: true });
 
-      const { data: recentHadis } = await supabase
+      const { data: allHadis } = await supabase
         .from("daily_content")
         .select("*")
         .eq("type", "hadis")
-        .lte("date", today)
-        .order("date", { ascending: false })
-        .limit(1);
+        .order("created_at", { ascending: true });
 
-      if (recentAyet && recentAyet.length > 0) setAyet(recentAyet[0]);
-      if (recentHadis && recentHadis.length > 0) setHadis(recentHadis[0]);
+      if (allAyets && allAyets.length > 0) {
+        setAyet(allAyets[dayOfYear % allAyets.length]);
+      }
+      if (allHadis && allHadis.length > 0) {
+        setHadis(allHadis[dayOfYear % allHadis.length]);
+      }
 
       setLoading(false);
     };
