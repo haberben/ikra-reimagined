@@ -34,6 +34,8 @@ interface HomePageProps {
   onNotifications: () => void;
   onZikirmatik: () => void;
   onMenuOpen: () => void;
+  onToggleDark?: () => void;
+  dark?: boolean;
 }
 
 const PRAYER_LABELS: Record<string, string> = {
@@ -63,7 +65,7 @@ const DISCOVER_ITEMS = [
   { icon: "counter_1", label: "Zikirmatik", action: "zikirmatik" },
 ];
 
-export default function HomePage({ city, onNavigate, onNotifications, onZikirmatik, onMenuOpen }: HomePageProps) {
+export default function HomePage({ city, onNavigate, onNotifications, onZikirmatik, onMenuOpen, onToggleDark, dark }: HomePageProps) {
   const { times, hijri, loading } = usePrayerTimes(city);
   const { current, next, remaining, progress } = useCurrentPrayer(times);
   const { ayet, hadis } = useDailyContent();
@@ -91,6 +93,8 @@ export default function HomePage({ city, onNavigate, onNotifications, onZikirmat
           showPattern={false}
           onLeftClick={onMenuOpen}
           onRightClick={onNotifications}
+          onToggleDark={onToggleDark}
+          isDark={dark}
           className="border-none bg-transparent"
         />
         {hijri && (
@@ -123,7 +127,10 @@ export default function HomePage({ city, onNavigate, onNotifications, onZikirmat
 
           <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
             <span className="material-symbols-outlined text-[18px]">schedule</span>
-            <span>{next} vaktine kalan: <strong className="text-foreground">{remaining}</strong></span>
+            <span>
+              <span>{next} vaktine: </span>
+              <strong className="text-foreground font-mono tabular-nums tracking-wide text-base">{remaining}</strong>
+            </span>
           </div>
 
           {/* Progress bar */}

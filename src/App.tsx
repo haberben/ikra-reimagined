@@ -217,7 +217,7 @@ const App = () => {
   const renderTab = () => {
     switch (activeTab) {
       case "home":
-        return <HomePage city={city} onNavigate={setActiveTab} onNotifications={handleNotifications} onZikirmatik={handleZikirmatik} onMenuOpen={handleMenuOpen} />;
+        return <HomePage city={city} onNavigate={setActiveTab} onNotifications={handleNotifications} onZikirmatik={handleZikirmatik} onMenuOpen={handleMenuOpen} onToggleDark={toggleDark} dark={dark} />;
       case "times":
         return <PrayerTimesPage city={city} setCity={setCity} onNotifications={handleNotifications} onMenuOpen={handleMenuOpen} />;
       case "quran":

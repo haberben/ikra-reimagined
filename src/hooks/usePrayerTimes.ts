@@ -22,7 +22,27 @@ export function usePrayerTimes(city: string, coords?: { lat: number; lng: number
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const cacheKey = coords ? `ikra_times_${coords.lat}_${coords.lng}` : `ikra_times_${city}`;
+    const cacheHijriKey = cacheKey + "_hijri";
+    const cacheTsKey = cacheKey + "_ts";
+    const TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
+
     const fetchTimes = async () => {
+      // Try cache first
+      try {
+        const cachedTs = localStorage.getItem(cacheTsKey);
+        if (cachedTs && Date.now() - Number(cachedTs) < TTL_MS) {
+          const cachedTimes = localStorage.getItem(cacheKey);
+          const cachedHijri = localStorage.getItem(cacheHijriKey);
+          if (cachedTimes) {
+            setTimes(JSON.parse(cachedTimes));
+            if (cachedHijri) setHijri(JSON.parse(cachedHijri));
+            setLoading(false);
+            return; // Serve from cache
+          }
+        }
+      } catch {}
+
       try {
         setLoading(true);
         let url = `https://api.aladhan.com/v1/timingsByCity?city=${encodeURIComponent(city)}&country=TR&method=13`;
@@ -37,9 +57,24 @@ export function usePrayerTimes(city: string, coords?: { lat: number; lng: number
         if (data.code === 200) {
           setTimes(data.data.timings);
           setHijri(data.data.date.hijri);
+          // Save to cache
+          try {
+            localStorage.setItem(cacheKey, JSON.stringify(data.data.timings));
+            localStorage.setItem(cacheHijriKey, JSON.stringify(data.data.date.hijri));
+            localStorage.setItem(cacheTsKey, String(Date.now()));
+          } catch {}
         }
       } catch (e) {
         console.error("Prayer times fetch error:", e);
+        // Serve stale cache if available
+        try {
+          const cachedTimes = localStorage.getItem(cacheKey);
+          const cachedHijri = localStorage.getItem(cacheHijriKey);
+          if (cachedTimes) {
+            setTimes(JSON.parse(cachedTimes));
+            if (cachedHijri) setHijri(JSON.parse(cachedHijri));
+          }
+        } catch {}
       } finally {
         setLoading(false);
       }
@@ -51,8 +86,8 @@ export function usePrayerTimes(city: string, coords?: { lat: number; lng: number
 }
 
 export function useCurrentPrayer(times: PrayerTimesData | null) {
-  const [current, setCurrent] = useState<string>("Fajr");
-  const [next, setNext] = useState<string>("Sunrise");
+  const [current, setCurrent] = useState<string>("İmsak");
+  const [next, setNext] = useState<string>("Güneş");
   const [remaining, setRemaining] = useState<string>("--:--");
   const [progress, setProgress] = useState(0);
 
@@ -61,7 +96,7 @@ export function useCurrentPrayer(times: PrayerTimesData | null) {
 
     const update = () => {
       const now = new Date();
-      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+      const nowSeconds = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
 
       const prayerOrder = [
         { key: "Fajr", name: "İmsak", label: "Fajr" }, // Aladhan's Fajr is Diyanet's Imsak
@@ -72,17 +107,17 @@ export function useCurrentPrayer(times: PrayerTimesData | null) {
         { key: "Isha", name: "Yatsı", label: "Isha" },
       ];
 
-      const toMinutes = (t: string) => {
+      const toSeconds = (t: string) => {
         const [h, m] = t.split(":").map(Number);
-        return h * 60 + m;
+        return h * 3600 + m * 60;
       };
 
       let currentPrayer = prayerOrder[prayerOrder.length - 1];
       let nextPrayer = prayerOrder[0];
 
       for (let i = 0; i < prayerOrder.length; i++) {
-        const time = toMinutes((times as any)[prayerOrder[i].key]);
-        if (nowMinutes < time) {
+        const time = toSeconds((times as any)[prayerOrder[i].key]);
+        if (nowSeconds < time) {
           nextPrayer = prayerOrder[i];
           currentPrayer = i > 0 ? prayerOrder[i - 1] : prayerOrder[prayerOrder.length - 1];
           break;
@@ -96,23 +131,29 @@ export function useCurrentPrayer(times: PrayerTimesData | null) {
       setCurrent(currentPrayer.name);
       setNext(nextPrayer.name);
 
-      const nextTime = toMinutes((times as any)[nextPrayer.key]);
-      let diff = nextTime - nowMinutes;
-      if (diff < 0) diff += 24 * 60;
-      const h = Math.floor(diff / 60);
-      const m = diff % 60;
-      setRemaining(`${h}sa ${m}dk`);
+      const nextTimeSecs = toSeconds((times as any)[nextPrayer.key]);
+      let diffSecs = nextTimeSecs - nowSeconds;
+      if (diffSecs < 0) diffSecs += 24 * 3600; // next day
+      
+      const h = Math.floor(diffSecs / 3600);
+      const m = Math.floor((diffSecs % 3600) / 60);
+      const s = diffSecs % 60;
+      setRemaining(
+        h > 0
+          ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+          : `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+      );
 
-      const currentTime = toMinutes((times as any)[currentPrayer.key]);
-      let totalSpan = nextTime - currentTime;
-      if (totalSpan <= 0) totalSpan += 24 * 60;
-      let elapsed = nowMinutes - currentTime;
-      if (elapsed < 0) elapsed += 24 * 60;
+      const currentTimeSecs = toSeconds((times as any)[currentPrayer.key]);
+      let totalSpan = nextTimeSecs - currentTimeSecs;
+      if (totalSpan <= 0) totalSpan += 24 * 3600;
+      let elapsed = nowSeconds - currentTimeSecs;
+      if (elapsed < 0) elapsed += 24 * 3600;
       setProgress(Math.min((elapsed / totalSpan) * 100, 100));
     };
 
     update();
-    const interval = setInterval(update, 30000);
+    const interval = setInterval(update, 1000); // tick every second for real-time countdown
     return () => clearInterval(interval);
   }, [times]);
 
