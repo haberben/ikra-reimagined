@@ -217,11 +217,17 @@ export async function managePersistentNotification(
   }
 }
 
-// Schedule daily tevekkul notification
+// Schedule daily tevekkul notification (ONCE per day)
 export async function scheduleTevekkulNotification(
   hour: number,
-  minute: number
+  minute: number,
+  force = false
 ): Promise<number | null> {
+  const todayKey = `ikra_scheduled_tevekkul_${new Date().toDateString()}`;
+  if (!force && localStorage.getItem(todayKey)) {
+    return null; // Already scheduled today
+  }
+
   const now = new Date();
   const target = new Date(now);
   target.setHours(hour, minute, 0, 0);
@@ -242,12 +248,16 @@ export async function scheduleTevekkulNotification(
         bodyText += `\n\n— ${randomContent.source}`;
       }
 
-      return await scheduleLocalNotification(
+      const id = await scheduleLocalNotification(
         "✨ Tevekkül Vakti",
         bodyText,
         delay,
         "daily-tevekkul"
       );
+      if (id !== null) {
+        localStorage.setItem(todayKey, '1');
+      }
+      return id;
     }
   } catch (e) {
     console.error("Failed to fetch Tevekkül content for notification", e);
@@ -370,12 +380,18 @@ export async function schedulePrayerNotifications(
   return timerIds;
 }
 
-// Schedule daily ayet/hadis notification
+// Schedule daily ayet/hadis notification (ONCE per day)
 export async function scheduleDailyContentNotification(
   type: 'ayet' | 'hadis',
   hour: number,
-  minute: number
+  minute: number,
+  force = false
 ): Promise<number | null> {
+  const todayKey = `ikra_scheduled_${type}_${new Date().toDateString()}`;
+  if (!force && localStorage.getItem(todayKey)) {
+    return null; // Already scheduled today
+  }
+
   const now = new Date();
   const target = new Date(now);
   target.setHours(hour, minute, 0, 0);
@@ -390,7 +406,11 @@ export async function scheduleDailyContentNotification(
     ? 'Günün ayetini okumak için tıklayın'
     : 'Günün hadisini okumak için tıklayın';
 
-  return scheduleLocalNotification(title, body, delay, `daily-${type}`);
+  const id = await scheduleLocalNotification(title, body, delay, `daily-${type}`);
+  if (id !== null) {
+    localStorage.setItem(todayKey, '1');
+  }
+  return id;
 }
 
 // Register background sync
