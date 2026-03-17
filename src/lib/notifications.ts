@@ -228,6 +228,10 @@ export async function scheduleTevekkulNotification(
     return null; // Already scheduled today
   }
 
+  // Write the guard IMMEDIATELY so a network failure
+  // doesn't cause re-scheduling on next app open
+  localStorage.setItem(todayKey, '1');
+
   const now = new Date();
   const target = new Date(now);
   target.setHours(hour, minute, 0, 0);
@@ -238,32 +242,32 @@ export async function scheduleTevekkulNotification(
 
   const delay = target.getTime() - now.getTime();
   
+  // Fallback text used when Supabase is unreachable (offline)
+  const OFFLINE_FALLBACK = "Allah'a tevekkül et; şüphesiz Allah, tevekkül edenleri sever. — Âl-i İmrân, 159";
+
+  let bodyText = OFFLINE_FALLBACK;
+
   try {
     const { data } = await supabase.from('tevekkul_vakti').select('*');
     if (data && data.length > 0) {
       const randomContent = data[Math.floor(Math.random() * data.length)];
-      
-      let bodyText = randomContent.content_text;
+      bodyText = randomContent.content_text;
       if (randomContent.source) {
         bodyText += `\n\n— ${randomContent.source}`;
       }
-
-      const id = await scheduleLocalNotification(
-        "✨ Tevekkül Vakti",
-        bodyText,
-        delay,
-        "daily-tevekkul"
-      );
-      if (id !== null) {
-        localStorage.setItem(todayKey, '1');
-      }
-      return id;
     }
   } catch (e) {
-    console.error("Failed to fetch Tevekkül content for notification", e);
+    console.error("Failed to fetch Tevekkül content, using fallback", e);
+    // bodyText stays as the offline fallback above
   }
 
-  return null;
+  const id = await scheduleLocalNotification(
+    "✨ Tevekkül Vakti",
+    bodyText,
+    delay,
+    "daily-tevekkul"
+  );
+  return id;
 }
 
 // Cancel all pending native notifications
@@ -392,6 +396,10 @@ export async function scheduleDailyContentNotification(
     return null; // Already scheduled today
   }
 
+  // Write the guard IMMEDIATELY before any async work so
+  // a network failure or app restart doesn't cause a duplicate
+  localStorage.setItem(todayKey, '1');
+
   const now = new Date();
   const target = new Date(now);
   target.setHours(hour, minute, 0, 0);
@@ -407,9 +415,6 @@ export async function scheduleDailyContentNotification(
     : 'Günün hadisini okumak için tıklayın';
 
   const id = await scheduleLocalNotification(title, body, delay, `daily-${type}`);
-  if (id !== null) {
-    localStorage.setItem(todayKey, '1');
-  }
   return id;
 }
 
