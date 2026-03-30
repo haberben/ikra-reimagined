@@ -120,7 +120,7 @@ export default function HomePage({ city, coords, onNavigate, onNotifications, on
                     {isToday ? current : PRAYER_LABELS[Object.keys(day.times).find(key => {
                       const now = new Date();
                       const t = (day.times as any)[key];
-                      const [h, m] = t.split(":").map(Number);
+                      const [h, m] = t.match(/(\d{1,2}):(\d{1,2})/)?.slice(1).map(Number) || [0, 0];
                       const pTime = new Date(now);
                       pTime.setHours(h, m, 0, 0);
                       return now < pTime;

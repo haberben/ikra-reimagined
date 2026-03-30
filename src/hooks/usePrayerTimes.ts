@@ -38,38 +38,41 @@ export function usePrayerTimes(city: string, coords?: { lat: number; lng: number
     const cacheTsKey = cacheKey + "_ts";
     const TTL_MS = 24 * 60 * 60 * 1000; // 24 hours for calendar
 
-    const fetchTimes = async () => {
-      // Try cache first
-      try {
-        const cachedTs = localStorage.getItem(cacheTsKey);
-        if (cachedTs && Date.now() - Number(cachedTs) < TTL_MS) {
-          const cachedData = localStorage.getItem(cacheKey);
-          if (cachedData) {
-            const data = JSON.parse(cachedData);
-            processData(data);
-            return;
-          }
-        }
-      } catch {}
-
+    const fetchCalendar = async () => {
       try {
         setLoading(true);
+        // Fetch current month
         let url = `https://api.aladhan.com/v1/calendarByCity?city=${encodeURIComponent(city)}&country=TR&method=13&month=${month}&year=${year}`;
-        
         if (coords) {
           url = `https://api.aladhan.com/v1/calendar?latitude=${coords.lat}&longitude=${coords.lng}&method=13&month=${month}&year=${year}`;
         }
 
         const res = await fetch(url);
         const data = await res.json();
-        if (data.code === 200) {
-          processData(data.data);
-          // Save to cache
-          try {
-            localStorage.setItem(cacheKey, JSON.stringify(data.data));
-            localStorage.setItem(cacheTsKey, String(Date.now()));
-          } catch {}
+        let allDays = data.code === 200 ? data.data : [];
+
+        // If we are near the end of the month (last 7 days), fetch next month too
+        const daysInMonth = new Date(year, month, 0).getDate();
+        if (now.getDate() > daysInMonth - 7) {
+          const nextMonth = month === 12 ? 1 : month + 1;
+          const nextYear = month === 12 ? year + 1 : year;
+          let nextUrl = `https://api.aladhan.com/v1/calendarByCity?city=${encodeURIComponent(city)}&country=TR&method=13&month=${nextMonth}&year=${nextYear}`;
+          if (coords) {
+            nextUrl = `https://api.aladhan.com/v1/calendar?latitude=${coords.lat}&longitude=${coords.lng}&method=13&month=${nextMonth}&year=${nextYear}`;
+          }
+          const nextRes = await fetch(nextUrl);
+          const nextData = await nextRes.json();
+          if (nextData.code === 200) {
+            allDays = [...allDays, ...nextData.data];
+          }
         }
+
+        processData(allDays);
+        // Cache management (simplified for multi-month for now)
+        try {
+          localStorage.setItem(cacheKey, JSON.stringify(allDays));
+          localStorage.setItem(cacheTsKey, String(Date.now()));
+        } catch {}
       } catch (e) {
         console.error("Prayer times fetch error:", e);
       } finally {
@@ -84,7 +87,7 @@ export function usePrayerTimes(city: string, coords?: { lat: number; lng: number
         setHijri(todayData.date.hijri);
       }
 
-      // Get next 7 days
+      // Get next 7 days (including cross-month days if available)
       const todayIndex = days.findIndex(d => d.date.gregorian.day === todayStr);
       const nextDays = days.slice(todayIndex, todayIndex + 7).map(d => ({
         date: d.date.readable,
@@ -95,7 +98,20 @@ export function usePrayerTimes(city: string, coords?: { lat: number; lng: number
       setLoading(false);
     };
 
-    fetchTimes();
+    // Try cache first
+    try {
+      const cachedTs = localStorage.getItem(cacheTsKey);
+      if (cachedTs && Date.now() - Number(cachedTs) < TTL_MS) {
+        const cachedData = localStorage.getItem(cacheKey);
+        if (cachedData) {
+          const data = JSON.parse(cachedData);
+          processData(data);
+          return;
+        }
+      }
+    } catch {}
+
+    fetchCalendar();
   }, [city, coords?.lat, coords?.lng]);
 
   return { times, hijri, weekly, loading };
@@ -124,7 +140,11 @@ export function useCurrentPrayer(times: PrayerTimesData | null) {
       ];
 
       const toSeconds = (t: string) => {
-        const [h, m] = t.split(":").map(Number);
+        // Sanitize string (regex to match HH:mm, removing offsets like +03)
+        const match = t.match(/(\d{1,2}):(\d{1,2})/);
+        if (!match) return 0;
+        const h = parseInt(match[1], 10);
+        const m = parseInt(match[2], 10);
         return h * 3600 + m * 60;
       };
 

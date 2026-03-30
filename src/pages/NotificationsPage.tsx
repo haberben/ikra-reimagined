@@ -76,8 +76,18 @@ export default function NotificationsPage({ onBack }: { onBack: () => void }) {
 
   // Persist and schedule prayer notifications when toggles change
   useEffect(() => {
-    localStorage.setItem("ikra_notif_toggles", JSON.stringify(notifications));
-    localStorage.setItem("ikra_notif_times", JSON.stringify(notifTimes));
+    const prevTogglesStr = localStorage.getItem("ikra_notif_toggles");
+    const prevTimesStr = localStorage.getItem("ikra_notif_times");
+    const currentTogglesStr = JSON.stringify(notifications);
+    const currentTimesStr = JSON.stringify(notifTimes);
+
+    // Only proceed if things changed from what's in storage
+    if (prevTogglesStr === currentTogglesStr && prevTimesStr === currentTimesStr) {
+      return;
+    }
+
+    localStorage.setItem("ikra_notif_toggles", currentTogglesStr);
+    localStorage.setItem("ikra_notif_times", currentTimesStr);
 
     const hasAnyEnabled = Object.values(notifications).some(Boolean);
     if (!hasAnyEnabled) return;
@@ -109,7 +119,16 @@ export default function NotificationsPage({ onBack }: { onBack: () => void }) {
 
   // Manage persistent notification when toggle or times change
   useEffect(() => {
-    localStorage.setItem("ikra_persistent_notif", JSON.stringify(persistentEnabled));
+    const prevPersistentStr = localStorage.getItem("ikra_persistent_notif_prev");
+    const currentPersistentStr = JSON.stringify(persistentEnabled);
+
+    if (prevPersistentStr === currentPersistentStr) {
+      return;
+    }
+
+    localStorage.setItem("ikra_persistent_notif", currentPersistentStr);
+    localStorage.setItem("ikra_persistent_notif_prev", currentPersistentStr);
+
     const city = localStorage.getItem("ikra_city") || "İstanbul";
 
     if (persistentEnabled) {

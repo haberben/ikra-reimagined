@@ -79,7 +79,7 @@ export async function scheduleLocalNotification(
             body,
             id,
             schedule: { at: scheduleAt },
-            sound: soundFile,
+            sound: tag?.startsWith("prayer") || tag === "persistent" ? undefined : soundFile,
             smallIcon: "ic_stat_icon_config_sample",
             iconColor: "#1a8a4a",
             ...(sound === "silent" ? { extra: { silent: "true" } } : {}),
