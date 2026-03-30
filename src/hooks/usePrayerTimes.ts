@@ -16,73 +16,89 @@ export interface HijriDate {
   year: string;
 }
 
+export interface DailyPrayer {
+  date: string;
+  times: PrayerTimesData;
+  hijri: HijriDate;
+}
+
 export function usePrayerTimes(city: string, coords?: { lat: number; lng: number }) {
   const [times, setTimes] = useState<PrayerTimesData | null>(null);
   const [hijri, setHijri] = useState<HijriDate | null>(null);
+  const [weekly, setWeekly] = useState<DailyPrayer[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const cacheKey = coords ? `ikra_times_${coords.lat}_${coords.lng}` : `ikra_times_${city}`;
-    const cacheHijriKey = cacheKey + "_hijri";
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const year = now.getFullYear();
+    const todayStr = now.getDate().toString().padStart(2, '0');
+
+    const cacheKey = coords ? `ikra_cal_${coords.lat}_${coords.lng}_${month}_${year}` : `ikra_cal_${city}_${month}_${year}`;
     const cacheTsKey = cacheKey + "_ts";
-    const TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
+    const TTL_MS = 24 * 60 * 60 * 1000; // 24 hours for calendar
 
     const fetchTimes = async () => {
       // Try cache first
       try {
         const cachedTs = localStorage.getItem(cacheTsKey);
         if (cachedTs && Date.now() - Number(cachedTs) < TTL_MS) {
-          const cachedTimes = localStorage.getItem(cacheKey);
-          const cachedHijri = localStorage.getItem(cacheHijriKey);
-          if (cachedTimes) {
-            setTimes(JSON.parse(cachedTimes));
-            if (cachedHijri) setHijri(JSON.parse(cachedHijri));
-            setLoading(false);
-            return; // Serve from cache
+          const cachedData = localStorage.getItem(cacheKey);
+          if (cachedData) {
+            const data = JSON.parse(cachedData);
+            processData(data);
+            return;
           }
         }
       } catch {}
 
       try {
         setLoading(true);
-        let url = `https://api.aladhan.com/v1/timingsByCity?city=${encodeURIComponent(city)}&country=TR&method=13`;
+        let url = `https://api.aladhan.com/v1/calendarByCity?city=${encodeURIComponent(city)}&country=TR&method=13&month=${month}&year=${year}`;
         
         if (coords) {
-           const timestamp = Math.floor(Date.now() / 1000);
-           url = `https://api.aladhan.com/v1/timings/${timestamp}?latitude=${coords.lat}&longitude=${coords.lng}&method=13`;
+          url = `https://api.aladhan.com/v1/calendar?latitude=${coords.lat}&longitude=${coords.lng}&method=13&month=${month}&year=${year}`;
         }
 
         const res = await fetch(url);
         const data = await res.json();
         if (data.code === 200) {
-          setTimes(data.data.timings);
-          setHijri(data.data.date.hijri);
+          processData(data.data);
           // Save to cache
           try {
-            localStorage.setItem(cacheKey, JSON.stringify(data.data.timings));
-            localStorage.setItem(cacheHijriKey, JSON.stringify(data.data.date.hijri));
+            localStorage.setItem(cacheKey, JSON.stringify(data.data));
             localStorage.setItem(cacheTsKey, String(Date.now()));
           } catch {}
         }
       } catch (e) {
         console.error("Prayer times fetch error:", e);
-        // Serve stale cache if available
-        try {
-          const cachedTimes = localStorage.getItem(cacheKey);
-          const cachedHijri = localStorage.getItem(cacheHijriKey);
-          if (cachedTimes) {
-            setTimes(JSON.parse(cachedTimes));
-            if (cachedHijri) setHijri(JSON.parse(cachedHijri));
-          }
-        } catch {}
       } finally {
         setLoading(false);
       }
     };
+
+    const processData = (days: any[]) => {
+      const todayData = days.find(d => d.date.gregorian.day === todayStr);
+      if (todayData) {
+        setTimes(todayData.timings);
+        setHijri(todayData.date.hijri);
+      }
+
+      // Get next 7 days
+      const todayIndex = days.findIndex(d => d.date.gregorian.day === todayStr);
+      const nextDays = days.slice(todayIndex, todayIndex + 7).map(d => ({
+        date: d.date.readable,
+        times: d.timings,
+        hijri: d.date.hijri
+      }));
+      setWeekly(nextDays);
+      setLoading(false);
+    };
+
     fetchTimes();
   }, [city, coords?.lat, coords?.lng]);
 
-  return { times, hijri, loading };
+  return { times, hijri, weekly, loading };
 }
 
 export function useCurrentPrayer(times: PrayerTimesData | null) {

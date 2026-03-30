@@ -21,6 +21,7 @@ import SuggestionsPage from "@/pages/SuggestionsPage";
 import ProfilePanel from "@/components/ProfilePanel";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { useLocation } from "@/hooks/useLocation";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,14 @@ const App = () => {
   const [pageTransition, setPageTransition] = useState(false);
   const [dark, setDark] = useState(() => localStorage.getItem("ikra_theme") === "dark");
   const [authEmail, setAuthEmail] = useState<string | null>(null);
+  const [coords, setCoords] = useState<{ lat: number, lng: number } | undefined>(() => {
+    try {
+      const saved = localStorage.getItem("ikra_coords");
+      return saved ? JSON.parse(saved) : undefined;
+    } catch { return undefined; }
+  });
+  
+  const { getCurrentLocation } = useLocation();
 
   // Request permissions on first launch
   useEffect(() => {
@@ -74,6 +83,17 @@ const App = () => {
 
     const handleOpenProfile = () => setShowProfile(true);
     window.addEventListener("open-profile", handleOpenProfile);
+
+    // Initial location check if auto-location is on
+    const autoLoc = localStorage.getItem("ikra_auto_location") === "true";
+    if (autoLoc) {
+      getCurrentLocation().then(newCoords => {
+        if (newCoords) {
+          setCoords(newCoords);
+          localStorage.setItem("ikra_coords", JSON.stringify(newCoords));
+        }
+      });
+    }
 
     // Track authentication state to display in MenuDrawer
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -217,9 +237,9 @@ const App = () => {
   const renderTab = () => {
     switch (activeTab) {
       case "home":
-        return <HomePage city={city} onNavigate={setActiveTab} onNotifications={handleNotifications} onZikirmatik={handleZikirmatik} onMenuOpen={handleMenuOpen} onToggleDark={toggleDark} dark={dark} />;
+        return <HomePage city={city} coords={coords} onNavigate={setActiveTab} onNotifications={handleNotifications} onZikirmatik={handleZikirmatik} onMenuOpen={handleMenuOpen} onToggleDark={toggleDark} dark={dark} />;
       case "times":
-        return <PrayerTimesPage city={city} setCity={setCity} onNotifications={handleNotifications} onMenuOpen={handleMenuOpen} />;
+        return <PrayerTimesPage city={city} setCity={setCity} coords={coords} setCoords={setCoords} onNotifications={handleNotifications} onMenuOpen={handleMenuOpen} />;
       case "quran":
         return <QuranPage onMenuOpen={handleMenuOpen} onNotifications={handleNotifications} />;
       case "gallery":

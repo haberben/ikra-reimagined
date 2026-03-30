@@ -30,6 +30,7 @@ async function shareContent(type: string, arabicText: string, turkishText: strin
 
 interface HomePageProps {
   city: string;
+  coords?: { lat: number; lng: number };
   onNavigate: (tab: string) => void;
   onNotifications: () => void;
   onZikirmatik: () => void;
@@ -65,24 +66,11 @@ const DISCOVER_ITEMS = [
   { icon: "counter_1", label: "Zikirmatik", action: "zikirmatik" },
 ];
 
-export default function HomePage({ city, onNavigate, onNotifications, onZikirmatik, onMenuOpen, onToggleDark, dark }: HomePageProps) {
-  const { times, hijri, loading } = usePrayerTimes(city);
+export default function HomePage({ city, coords, onNavigate, onNotifications, onZikirmatik, onMenuOpen, onToggleDark, dark }: HomePageProps) {
+  const { times, hijri, weekly, loading } = usePrayerTimes(city, coords);
   const { current, next, remaining, progress } = useCurrentPrayer(times);
   const { ayet, hadis } = useDailyContent();
   const { toggleFavorite, isFavorite } = useFavorites();
-
-  const hijriMonthTr = hijri ? (HIJRI_MONTHS_TR[hijri.month.en] || hijri.month.en) : "";
-
-  const miniPrayers = times
-    ? [
-        { key: "Imsak", time: times.Fajr }, // Aladhan Fajr = Diyanet İmsak (Diyanet doesn't use a separate 10-min-early Imsak)
-        { key: "Sunrise", time: times.Sunrise },
-        { key: "Dhuhr", time: times.Dhuhr },
-        { key: "Asr", time: times.Asr },
-        { key: "Maghrib", time: times.Maghrib },
-        { key: "Isha", time: times.Isha },
-      ]
-    : [];
 
   return (
     <div className="pb-20">
@@ -104,66 +92,107 @@ export default function HomePage({ city, onNavigate, onNotifications, onZikirmat
               {hijri.day} {hijri.month.ar} {hijri.year}
             </p>
             <p className="text-xs text-primary-foreground/60 mt-0.5">
-              {hijri.day} {hijriMonthTr} {hijri.year}
+              {hijri.day} {HIJRI_MONTHS_TR[hijri.month.en] || hijri.month.en} {hijri.year}
             </p>
           </div>
         )}
       </div>
 
-      {/* Main prayer card */}
-      <div className="px-4 -mt-12">
-        <div className="rounded-xl border border-primary/10 bg-card p-5 shadow-sm">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-primary">
-                Şu Anki Vakit
-              </p>
-              <h2 className="mt-1 text-4xl font-extrabold text-foreground">{current}</h2>
-            </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-              <span className="material-symbols-outlined text-primary text-[28px]">wb_sunny</span>
-            </div>
-          </div>
+      {/* Main prayer cards carousel */}
+      <div className="px-0 -mt-12 overflow-x-auto flex snap-x snap-mandatory hide-scrollbar gap-4 pb-4">
+        {weekly.length > 0 ? weekly.map((day, idx) => {
+          const isToday = idx === 0;
+          const dayTitle = isToday ? "Bugün" : day.date.split(" ").slice(0, 2).join(" ");
+          const hijriMonthTr = HIJRI_MONTHS_TR[day.hijri.month.en] || day.hijri.month.en;
+          
+          return (
+            <div 
+              key={day.date} 
+              className="min-w-[85%] first:ml-4 last:mr-4 snap-center rounded-xl border border-primary/10 bg-card p-5 shadow-sm"
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-primary flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[12px]">{isToday ? "today" : "calendar_today"}</span>
+                    {dayTitle} — {day.hijri.day} {hijriMonthTr}
+                  </p>
+                  <h2 className="mt-1 text-4xl font-extrabold text-foreground">
+                    {isToday ? current : PRAYER_LABELS[Object.keys(day.times).find(key => {
+                      const now = new Date();
+                      const t = (day.times as any)[key];
+                      const [h, m] = t.split(":").map(Number);
+                      const pTime = new Date(now);
+                      pTime.setHours(h, m, 0, 0);
+                      return now < pTime;
+                    }) || "Fajr"]}
+                  </h2>
+                </div>
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                  <span className="material-symbols-outlined text-primary text-[28px]">
+                    {isToday ? "wb_sunny" : "auto_awesome"}
+                  </span>
+                </div>
+              </div>
 
-          <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
-            <span className="material-symbols-outlined text-[18px]">schedule</span>
-            <span>
-              <span>{next} vaktine: </span>
-              <strong className="text-foreground font-mono tabular-nums tracking-wide text-base">{remaining}</strong>
-            </span>
-          </div>
-
-          {/* Progress bar */}
-          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-primary/10">
-            <div
-              className="h-full rounded-full bg-primary transition-all"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-
-          {/* Mini prayer grid */}
-          {miniPrayers.length > 0 && (
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              {miniPrayers.map((p) => {
-                const isActive = PRAYER_LABELS[p.key] === current;
-                return (
-                  <div
-                    key={p.key}
-                    className={cn(
-                      "rounded-lg p-2 text-center",
-                      isActive
-                        ? "bg-primary/5 ring-2 ring-primary/20"
-                        : "bg-secondary"
-                    )}
-                  >
-                    <p className="text-[10px] text-muted-foreground">{PRAYER_LABELS[p.key]}</p>
-                    <p className="text-sm font-bold">{p.time}</p>
+              {isToday ? (
+                <>
+                  <div className="mt-6 flex flex-col items-center justify-center py-4">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-primary/60 mb-2">
+                      {next} VAKTİNE KALAN SÜRE
+                    </p>
+                    <div className="font-mono text-5xl font-black tabular-nums tracking-tighter text-primary">
+                      {remaining}
+                    </div>
                   </div>
-                );
-              })}
+                  <div className="mt-4 h-2 overflow-hidden rounded-full bg-primary/10">
+                    <div
+                      className="h-full rounded-full bg-primary shadow-[0_0_10px_rgba(6,76,57,0.3)] transition-all duration-1000"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                </>
+              ) : (
+                <div className="mt-6 py-4 text-center">
+                  <p className="text-sm font-medium text-muted-foreground italic">
+                    Gelecek günün vakitlerini aşağıda görebilirsiniz.
+                  </p>
+                </div>
+              )}
+
+              {/* Day's prayer grid */}
+              <div className="mt-6 grid grid-cols-3 gap-2">
+                {[
+                  { key: "Fajr", label: "İmsak", time: day.times.Fajr },
+                  { key: "Sunrise", label: "Güneş", time: day.times.Sunrise },
+                  { key: "Dhuhr", label: "Öğle", time: day.times.Dhuhr },
+                  { key: "Asr", label: "İkindi", time: day.times.Asr },
+                  { key: "Maghrib", label: "Akşam", time: day.times.Maghrib },
+                  { key: "Isha", label: "Yatsı", time: day.times.Isha },
+                ].map((p) => {
+                  const isActive = isToday && p.label === current;
+                  return (
+                    <div
+                      key={p.key}
+                      className={cn(
+                        "rounded-lg p-2 text-center",
+                        isActive
+                          ? "bg-primary/5 ring-2 ring-primary/20"
+                          : "bg-secondary"
+                      )}
+                    >
+                      <p className="text-[10px] text-muted-foreground">{p.label}</p>
+                      <p className="text-sm font-bold">{p.time}</p>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          )}
-        </div>
+          );
+        }) : (
+           <div className="mx-4 rounded-xl border border-primary/10 bg-card p-5 animate-pulse h-48 flex items-center justify-center">
+             <span className="text-primary/50">Vakitler yükleniyor...</span>
+           </div>
+        )}
       </div>
 
       {/* Tevekkül Vakti */}

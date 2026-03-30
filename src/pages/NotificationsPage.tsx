@@ -62,6 +62,14 @@ export default function NotificationsPage({ onBack }: { onBack: () => void }) {
     try { return JSON.parse(localStorage.getItem("ikra_persistent_notif") || "false"); } catch { return false; }
   });
 
+  const [autoLocationEnabled, setAutoLocationEnabled] = useState<boolean>(() => {
+    try { return JSON.parse(localStorage.getItem("ikra_auto_location") || "false"); } catch { return false; }
+  });
+
+  const [pinDailyEnabled, setPinDailyEnabled] = useState<boolean>(() => {
+    try { return JSON.parse(localStorage.getItem("ikra_pin_daily") || "false"); } catch { return false; }
+  });
+
   useEffect(() => {
     fetchAdminNotifs();
   }, []);
@@ -186,6 +194,18 @@ export default function NotificationsPage({ onBack }: { onBack: () => void }) {
     setPersistentEnabled(newVal);
   };
 
+  const handleToggleAutoLocation = () => {
+    const newVal = !autoLocationEnabled;
+    setAutoLocationEnabled(newVal);
+    localStorage.setItem("ikra_auto_location", JSON.stringify(newVal));
+  };
+
+  const handleTogglePinDaily = () => {
+    const newVal = !pinDailyEnabled;
+    setPinDailyEnabled(newVal);
+    localStorage.setItem("ikra_pin_daily", JSON.stringify(newVal));
+  };
+
 
   const handleSoundChange = (sound: NotifSound) => {
     setSelectedSound(sound);
@@ -283,7 +303,7 @@ export default function NotificationsPage({ onBack }: { onBack: () => void }) {
 
         {/* Kalıcı Vakit Bildirimi (Android) */}
         <h3 className="mt-6 mb-3 text-sm font-bold uppercase tracking-wider text-primary">
-          Android Kilit/Bildirim Ekranı Vakti
+          Android Kilit/Bildirim Ekranı
         </h3>
         <div className="space-y-2 mb-2">
           <div className="flex items-center justify-between rounded-xl border border-primary/10 bg-card px-4 py-3 shadow-sm">
@@ -291,7 +311,7 @@ export default function NotificationsPage({ onBack }: { onBack: () => void }) {
               <span className="material-symbols-outlined text-primary">push_pin</span>
               <div>
                 <span className="font-medium">Vakitleri Kalıcı Göster</span>
-                <p className="text-[10px] text-muted-foreground mr-2">Cihazın bildirim çubuğunda sıradaki vakti ve kalan süreyi kalıcı olarak gösterir (Android 8+).</p>
+                <p className="text-[10px] text-muted-foreground mr-2">Bildirim çubuğunda sıradaki vakti ve kalan süreyi gösterir.</p>
               </div>
             </div>
             <button
@@ -304,6 +324,56 @@ export default function NotificationsPage({ onBack }: { onBack: () => void }) {
               <div className={cn(
                 "h-[27px] w-[27px] rounded-full bg-card shadow transition-transform",
                 persistentEnabled ? "translate-x-[22px]" : "translate-x-[2px]"
+              )} />
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between rounded-xl border border-primary/10 bg-card px-4 py-3 shadow-sm">
+            <div className="flex items-center gap-3">
+              <span className="material-symbols-outlined text-primary">book</span>
+              <div>
+                <span className="font-medium">Günün Ayetini/Hadisini Sabitle</span>
+                <p className="text-[10px] text-muted-foreground mr-2">Vakit bildiriminin içinde günün içeriğini de gösterir.</p>
+              </div>
+            </div>
+            <button
+              onClick={handleTogglePinDaily}
+              className={cn(
+                "h-[31px] w-[51px] rounded-full transition-colors flex-shrink-0",
+                pinDailyEnabled ? "bg-primary" : "bg-muted"
+              )}
+            >
+              <div className={cn(
+                "h-[27px] w-[27px] rounded-full bg-card shadow transition-transform",
+                pinDailyEnabled ? "translate-x-[22px]" : "translate-x-[2px]"
+              )} />
+            </button>
+          </div>
+        </div>
+
+        {/* Konum Ayarları */}
+        <h3 className="mt-6 mb-3 text-sm font-bold uppercase tracking-wider text-primary">
+          Konum Ayarları
+        </h3>
+        <div className="space-y-2 mb-2">
+          <div className="flex items-center justify-between rounded-xl border border-primary/10 bg-card px-4 py-3 shadow-sm">
+            <div className="flex items-center gap-3">
+              <span className="material-symbols-outlined text-primary">location_on</span>
+              <div>
+                <span className="font-medium">Otomatik Konum Algılama</span>
+                <p className="text-[10px] text-muted-foreground mr-2">Şehir değiştiğinde vakitleri otomatik olarak günceller.</p>
+              </div>
+            </div>
+            <button
+              onClick={handleToggleAutoLocation}
+              className={cn(
+                "h-[31px] w-[51px] rounded-full transition-colors flex-shrink-0",
+                autoLocationEnabled ? "bg-primary" : "bg-muted"
+              )}
+            >
+              <div className={cn(
+                "h-[27px] w-[27px] rounded-full bg-card shadow transition-transform",
+                autoLocationEnabled ? "translate-x-[22px]" : "translate-x-[2px]"
               )} />
             </button>
           </div>

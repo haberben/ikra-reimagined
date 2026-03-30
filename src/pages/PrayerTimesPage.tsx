@@ -10,6 +10,8 @@ import { schedulePrayerNotifications, requestNotificationPermission } from "@/li
 interface PrayerTimesPageProps {
   city: string;
   setCity: (c: string) => void;
+  coords?: { lat: number; lng: number };
+  setCoords: (c: { lat: number; lng: number } | undefined) => void;
   onNotifications: () => void;
   onMenuOpen: () => void;
 }

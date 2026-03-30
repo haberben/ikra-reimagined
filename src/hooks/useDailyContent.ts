@@ -53,10 +53,14 @@ export function useDailyContent() {
         .order("created_at", { ascending: true });
 
       if (allAyets && allAyets.length > 0) {
-        setAyet(allAyets[dayOfYear % allAyets.length]);
+        const item = allAyets[dayOfYear % allAyets.length];
+        setAyet(item);
+        localStorage.setItem("ikra_daily_ayet", item.turkish_text);
       }
       if (allHadis && allHadis.length > 0) {
-        setHadis(allHadis[dayOfYear % allHadis.length]);
+        const item = allHadis[dayOfYear % allHadis.length];
+        setHadis(item);
+        localStorage.setItem("ikra_daily_hadis", item.turkish_text);
       }
 
       setLoading(false);

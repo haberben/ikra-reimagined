@@ -191,11 +191,34 @@ export async function managePersistentNotification(
       
       const timeRemaining = h > 0 ? `${h} Saat ${m} Dakika Kaldı` : `${m} Dakika Kaldı`;
 
+      // Check if daily content pin is enabled
+      let bodyText = timeRemaining;
+      try {
+        const pinEnabled = JSON.parse(localStorage.getItem("ikra_pin_daily") || "false");
+        if (pinEnabled) {
+          // Alternative between Ayet and Hadis every minute to keep it fresh, or just show one
+          const ayet = localStorage.getItem("ikra_daily_ayet");
+          const hadis = localStorage.getItem("ikra_daily_hadis");
+          
+          if (ayet || hadis) {
+            bodyText += "\n\n";
+            // Show ayet if it's an even minute, hadis if odd, or whatever is available
+            if (now.getMinutes() % 2 === 0 && ayet) {
+              bodyText += `📖 Ayet: ${ayet}`;
+            } else if (hadis) {
+              bodyText += `📿 Hadis: ${hadis}`;
+            } else if (ayet) {
+              bodyText += `📖 Ayet: ${ayet}`;
+            }
+          }
+        }
+      } catch {}
+
       await LocalNotifications.schedule({
         notifications: [
           {
             title: `Sıradaki Vakit: ${nextPrayer.label} (${nextPrayer.time})`,
-            body: timeRemaining,
+            body: bodyText,
             id: PERSISTENT_NOTIF_ID,
             schedule: { at: new Date(Date.now() + 1000) }, // Schedule immediately
             smallIcon: "ic_stat_icon_config_sample",
