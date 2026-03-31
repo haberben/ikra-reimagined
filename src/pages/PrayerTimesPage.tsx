@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { TURKISH_CITIES } from "@/data/cities";
 import { usePrayerTimes } from "@/hooks/usePrayerTimes";
 import { useDailyContent } from "@/hooks/useDailyContent";
@@ -162,9 +162,12 @@ export default function PrayerTimesPage({ city, setCity, onNotifications, onMenu
     c.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Calculate qibla bearing for current city
-  const qiblaCoords = CITY_COORDS[city] || CITY_COORDS["İstanbul"];
-  const qiblaBearing = calculateQiblaBearing(qiblaCoords[0], qiblaCoords[1]);
+  // Calculate qibla bearing for current location or city
+  const qiblaBearing = useMemo(() => {
+    const lat = coords?.lat || CITY_COORDS[city]?.[0] || CITY_COORDS["İstanbul"][0];
+    const lng = coords?.lng || CITY_COORDS[city]?.[1] || CITY_COORDS["İstanbul"][1];
+    return calculateQiblaBearing(lat, lng);
+  }, [city, coords]);
 
   // Calculate direction to Qibla
   const getQiblaDirection = () => {

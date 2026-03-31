@@ -52,7 +52,10 @@ export default function HatimPage({ onMenuOpen, onNotifications }: HatimPageProp
   const [privateJuz, setPrivateJuz] = useState<JuzSlot[]>([]);
   const [showConfetti, setShowConfetti] = useState(false);
 
-  const userName = localStorage.getItem("ikra_name") || "";
+  const userNameValue = localStorage.getItem("ikra_name") || "";
+  const [archivedGroups, setArchivedGroups] = useState<HatimGroup[]>([]);
+  const isAdmin = (claimName.toLowerCase() === "admin" || userNameValue.toLowerCase() === "admin" || localStorage.getItem("ikra_admin") === "true");
+
   const userId = localStorage.getItem("ikra_user_id") || (() => {
     const id = crypto.randomUUID();
     localStorage.setItem("ikra_user_id", id);
@@ -62,40 +65,50 @@ export default function HatimPage({ onMenuOpen, onNotifications }: HatimPageProp
   useEffect(() => {
     loadGlobalHatim();
     loadPrivateGroups();
-  }, []);
-
-  useEffect(() => {
-    if (!globalGroup) return;
-    const channel = supabase
-      .channel("hatim-juz-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "hatim_juz", filter: `group_id=eq.${globalGroup.id}` },
-        () => loadJuz(globalGroup.id, false)
-      )
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [globalGroup?.id]);
+    loadArchivedHatims();
+  }, [claimName]);
 
   const loadGlobalHatim = async () => {
     setLoading(true);
+    // Find the current active (non-completed) public group
     let { data: groups } = await supabase
       .from("hatim_groups").select("*").eq("is_public", true)
       .is("completed_at", null).order("created_at", { ascending: false }).limit(1);
+    
     let group = groups?.[0] || null;
+    
+    // If no active group exists, create one
     if (!group) {
       const code = Math.random().toString(36).substring(2, 8).toUpperCase();
       const { data: newGroup } = await supabase
-        .from("hatim_groups").insert({ name: "Global Hatim #1", invite_code: code, is_public: true }).select().single();
+        .from("hatim_groups").insert({ name: `Global Hatim #${Date.now().toString().slice(-3)}`, invite_code: code, is_public: true }).select().single();
       group = newGroup;
       if (group) {
         const juzRows = Array.from({ length: 30 }, (_, i) => ({ group_id: group!.id, juz_number: i + 1 }));
         await supabase.from("hatim_juz").insert(juzRows);
       }
     }
+
     if (group) {
       setGlobalGroup(group);
       await loadJuz(group.id, true);
     }
     setLoading(false);
+  };
+
+  const loadArchivedHatims = async () => {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const { data } = await supabase
+      .from("hatim_groups")
+      .select("*")
+      .eq("is_public", true)
+      .not("completed_at", "is", null)
+      .gt("completed_at", thirtyDaysAgo.toISOString())
+      .order("completed_at", { ascending: false });
+    
+    if (data) setArchivedGroups(data);
   };
 
   const loadJuz = async (groupId: string, setLoadingState: boolean) => {
@@ -120,8 +133,26 @@ export default function HatimPage({ onMenuOpen, onNotifications }: HatimPageProp
     const slots = isPrivate ? privateJuz : juzSlots;
     const slot = slots.find(j => j.juz_number === juzNum);
     if (!slot) return;
-    await supabase.from("hatim_juz").update({ claimed_by: userId, claimed_by_name: claimName || userName, claimed_at: new Date().toISOString() }).eq("id", slot.id);
+    await supabase.from("hatim_juz").update({ claimed_by: userId, claimed_by_name: claimName || userNameValue, claimed_at: new Date().toISOString() }).eq("id", slot.id);
     setShowClaimModal(null);
+    loadJuz(groupId, false);
+  };
+
+  const handleUnclaim = async (juzNum: number, groupId: string, isPrivate: boolean) => {
+    const slots = isPrivate ? privateJuz : juzSlots;
+    const slot = slots.find(j => j.juz_number === juzNum);
+    if (!slot) return;
+    await supabase.from("hatim_juz")
+      .update({ claimed_by: null, claimed_by_name: null, claimed_at: null, completed_at: null })
+      .eq("id", slot.id);
+    loadJuz(groupId, false);
+  };
+
+  const handleResetGroup = async (groupId: string) => {
+    if (!confirm("Tüm hatimi sıfırlamak istediğinize emin misiniz?")) return;
+    await supabase.from("hatim_juz")
+      .update({ claimed_by: null, claimed_by_name: null, claimed_at: null, completed_at: null })
+      .eq("group_id", groupId);
     loadJuz(groupId, false);
   };
 
@@ -131,10 +162,19 @@ export default function HatimPage({ onMenuOpen, onNotifications }: HatimPageProp
     if (!slot) return;
     await supabase.from("hatim_juz").update({ completed_at: new Date().toISOString() }).eq("id", slot.id);
     loadJuz(groupId, false);
-    const completedCount = slots.filter(j => j.completed_at).length + 1;
+    
+    // Check if whole hatim is finished
+    const { data: updatedSlots } = await supabase.from("hatim_juz").select("completed_at").eq("group_id", groupId);
+    const completedCount = updatedSlots?.filter(j => j.completed_at).length || 0;
+    
     if (completedCount >= 30) {
       setShowConfetti(true);
       await supabase.from("hatim_groups").update({ completed_at: new Date().toISOString() }).eq("id", groupId);
+      // Trigger reload to pick up new group
+      setTimeout(() => {
+        loadGlobalHatim();
+        loadArchivedHatims();
+      }, 3000);
     }
   };
 
@@ -189,7 +229,17 @@ export default function HatimPage({ onMenuOpen, onNotifications }: HatimPageProp
         <div className="rounded-xl bg-primary p-4 text-primary-foreground">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold">Hatim Durumu</h3>
-            <span className="text-xs opacity-70">{claimed} katılımcı</span>
+            <div className="flex gap-2">
+              <span className="text-xs opacity-70">{claimed} katılımcı</span>
+              {isAdmin && (
+                <button 
+                  onClick={() => handleResetGroup(groupId)}
+                  className="bg-destructive/20 hover:bg-destructive/40 text-[10px] px-2 py-0.5 rounded-md"
+                >
+                  Sıfırla
+                </button>
+              )}
+            </div>
           </div>
           <div className="mt-3 h-2 overflow-hidden rounded-full bg-primary-foreground/20">
             <div className="h-full rounded-full gold-gradient transition-all" style={{ width: `${(completed / 30) * 100}%` }} />
@@ -238,6 +288,15 @@ export default function HatimPage({ onMenuOpen, onNotifications }: HatimPageProp
                 </div>
 
                 <div className="mt-2">
+                  {isAdmin && isClaimed ? (
+                     <button
+                       onClick={() => handleUnclaim(juz.juz_number, groupId, isPrivate)}
+                       className="w-full rounded-full bg-destructive/10 px-3 py-1.5 text-[10px] font-bold uppercase text-destructive mb-1"
+                     >
+                       ✕ Cüzü Boşalt
+                     </button>
+                  ) : null}
+                  
                   {isCompleted && isMine ? (
                     <button
                       onClick={() => handleUncomplete(juz.juz_number, groupId, isPrivate)}
@@ -291,6 +350,25 @@ export default function HatimPage({ onMenuOpen, onNotifications }: HatimPageProp
       ) : tab === "global" ? (
         <div className="px-4 pt-4">
           {globalGroup && renderJuzGrid(juzSlots, globalGroup.id, false)}
+          
+          {archivedGroups.length > 0 && (
+            <div className="mt-8 border-t border-primary/10 pt-4 pb-4">
+              <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-muted-foreground">Geçmiş Hatimler (Son 1 Ay)</h3>
+              <div className="space-y-2">
+                {archivedGroups.map((g) => (
+                   <div key={g.id} className="flex items-center justify-between rounded-xl bg-secondary/30 p-3">
+                      <div>
+                        <p className="text-xs font-bold">{g.name}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {new Date(g.completed_at!).toLocaleDateString("tr-TR")} tarihinde tamamlandı
+                        </p>
+                      </div>
+                      <span className="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary italic">DOLDU</span>
+                   </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       ) : activePrivateGroup ? (
         <div className="px-4 pt-4">

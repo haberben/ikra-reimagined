@@ -1,8 +1,10 @@
+import React from "react";
 import { cn } from "@/lib/utils";
 
 interface GoldButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   icon?: string;
   fullWidth?: boolean;
+  children?: React.ReactNode;
 }
 
 export default function GoldButton({ children, icon, fullWidth, className, ...props }: GoldButtonProps) {

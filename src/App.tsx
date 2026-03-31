@@ -25,6 +25,10 @@ import { useLocation } from "@/hooks/useLocation";
 
 const queryClient = new QueryClient();
 
+import { getStableUserId, syncUserProfile } from "@/lib/user";
+
+const APP_VERSION = "1.4.0"; // Current v1.4
+
 const App = () => {
   const [onboarded, setOnboarded] = useState(() => localStorage.getItem("ikra_onboarded") === "true");
   const [activeTab, setActiveTab] = useState("home");
@@ -37,6 +41,7 @@ const App = () => {
   const [pageTransition, setPageTransition] = useState(false);
   const [dark, setDark] = useState(() => localStorage.getItem("ikra_theme") === "dark");
   const [authEmail, setAuthEmail] = useState<string | null>(null);
+  const [stableId, setStableId] = useState<string | null>(null);
   const [coords, setCoords] = useState<{ lat: number, lng: number } | undefined>(() => {
     try {
       const saved = localStorage.getItem("ikra_coords");
@@ -46,39 +51,32 @@ const App = () => {
   
   const { getCurrentLocation } = useLocation();
 
-  // Request permissions on first launch
+  // Version check and reload logic for cache issues
   useEffect(() => {
-    requestAllPermissions();
-
-    // Register for Push Notifications (FCM)
-    import("@capacitor/push-notifications").then(({ PushNotifications }) => {
-      // Only runs on native
-      if (document.URL.indexOf('http://') === -1 && document.URL.indexOf('https://') === -1) {
-        PushNotifications.requestPermissions().then((result) => {
-          if (result.receive === 'granted') {
-            PushNotifications.register();
-          }
-        });
-
-        PushNotifications.addListener('registration', (token) => {
-          console.log('Push registration success, token: ' + token.value);
-          // Subscribe to topic all_users for the cloud function to reach us
-          import('@capacitor/core').then(({ Capacitor }) => {
-            if (Capacitor.getPlatform() === 'android') {
-              // Firebase messaging uses topics
-              // We'll just rely on the fact that Appflow will handle the native dependency
-            }
-          });
-        });
-
-        PushNotifications.addListener('pushNotificationReceived', (notification) => {
-          toast.success(notification.title || 'Yeni Bildirim', {
-            description: notification.body
-          });
+    const lastVer = localStorage.getItem("ikra_app_version");
+    if (lastVer && lastVer !== APP_VERSION) {
+      // Clear cache and reload
+      console.log("New version detected, clearing caches.");
+      localStorage.setItem("ikra_app_version", APP_VERSION);
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.getRegistrations().then(regs => {
+          for (const reg of regs) reg.unregister();
         });
       }
-    }).catch(() => {
-      // Ignore if not running in native Capacitor environment
+      window.location.reload();
+    } else {
+      localStorage.setItem("ikra_app_version", APP_VERSION);
+    }
+  }, []);
+
+  // Request permissions and identity on first launch
+  useEffect(() => {
+    requestAllPermissions();
+    
+    getStableUserId().then(id => {
+      setStableId(id);
+      const name = localStorage.getItem("ikra_name") || "Misafir";
+      syncUserProfile(name, city);
     });
 
     const handleOpenProfile = () => setShowProfile(true);
@@ -108,7 +106,7 @@ const App = () => {
       window.removeEventListener("open-profile", handleOpenProfile);
       subscription.unsubscribe();
     };
-  }, []);
+  }, [city]);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);

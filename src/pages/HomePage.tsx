@@ -39,24 +39,21 @@ interface HomePageProps {
   dark?: boolean;
 }
 
-const PRAYER_LABELS: Record<string, string> = {
-  Imsak: "İmsak", Fajr: "Sabah", Sunrise: "Güneş", Dhuhr: "Öğle",
-  Asr: "İkindi", Maghrib: "Akşam", Isha: "Yatsı",
+const HIJRI_MONTHS_TR: Record<string, string> = {
+  "Muharram": "Muharrem", "Safar": "Safer", "Rabi' al-awwal": "Rebiülevvel",
+  "Rabi' al-thani": "Rebiülahir", "Jumada al-ula": "Cemaziyelevvel",
+  "Jumada al-akhira": "Cemaziyelahir", "Rajab": "Recep", "Sha'ban": "Şaban",
+  "Ramadan": "Ramazan", "Shawwal": "Şevval", "Dhu al-Qi'dah": "Zilkade",
+  "Dhu al-Hijjah": "Zilhicce"
 };
 
-const HIJRI_MONTHS_TR: Record<string, string> = {
-  "Muḥarram": "Muharrem",
-  "Ṣafar": "Safer",
-  "Rabīʿ al-Awwal": "Rebiülevvel",
-  "Rabīʿ al-Thānī": "Rebiülahir",
-  "Jumādá al-Ūlá": "Cemaziyelevvel",
-  "Jumādá al-Ākhirah": "Cemaziyelahir",
-  "Rajab": "Recep",
-  "Shaʿbān": "Şaban",
-  "Ramaḍān": "Ramazan",
-  "Shawwāl": "Şevval",
-  "Dhū al-Qaʿdah": "Zilkade",
-  "Dhū al-Ḥijjah": "Zilhicce",
+const GREGORIAN_MONTHS_TR: Record<string, string> = {
+  "Jan": "Ocak", "Feb": "Şubat", "Mar": "Mart", "Apr": "Nisan", "May": "Mayıs", "Jun": "Haziran",
+  "Jul": "Temmuz", "Aug": "Ağustos", "Sep": "Eylül", "Oct": "Ekim", "Nov": "Kasım", "Dec": "Aralık"
+};
+
+const PRAYER_LABELS: Record<string, string> = {
+  "Fajr": "İmsak", "Sunrise": "Güneş", "Dhuhr": "Öğle", "Asr": "İkindi", "Maghrib": "Akşam", "Isha": "Yatsı"
 };
 
 const DISCOVER_ITEMS = [
@@ -102,7 +99,11 @@ export default function HomePage({ city, coords, onNavigate, onNotifications, on
       <div className="px-0 -mt-12 overflow-x-auto flex snap-x snap-mandatory hide-scrollbar gap-4 pb-4">
         {weekly.length > 0 ? weekly.map((day, idx) => {
           const isToday = idx === 0;
-          const dayTitle = isToday ? "Bugün" : day.date.split(" ").slice(0, 2).join(" ");
+          const dayParts = day.date.split(" ");
+          const dayNum = dayParts[0];
+          const monthEn = dayParts[1];
+          const monthTr = GREGORIAN_MONTHS_TR[monthEn] || monthEn;
+          const dayTitle = isToday ? "Bugün" : `${dayNum} ${monthTr}`;
           const hijriMonthTr = HIJRI_MONTHS_TR[day.hijri.month.en] || day.hijri.month.en;
           
           return (
