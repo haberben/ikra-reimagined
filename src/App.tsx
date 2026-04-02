@@ -106,17 +106,21 @@ const App = () => {
     import("@capacitor/local-notifications").then(({ LocalNotifications }) => {
       LocalNotifications.addListener('localNotificationActionPerformed', (notification) => {
         if (notification.actionId === 'increment_zikir') {
-          // Increment global total count
-          const totalCount = parseInt(localStorage.getItem("ikra_zikir_total") || "0", 10) + 1;
-          localStorage.setItem("ikra_zikir_total", totalCount.toString());
-          
-          // Re-trigger the persistent notification update immediately
-          const zikirEnabled = localStorage.getItem("ikra_persistent_zikir") === "true";
-          if (zikirEnabled) {
-            import("@/lib/notifications").then(({ managePersistentZikirNotification }) => {
-              managePersistentZikirNotification(true, null, totalCount, "Genel Zikir");
-            });
-          }
+          import("@/lib/zikir").then(({ logZikir, getPinnedZikir }) => {
+            const pinned = getPinnedZikir();
+            logZikir(pinned.name, 1);
+            
+            // Re-trigger the persistent notification update immediately
+            const zikirEnabled = localStorage.getItem("ikra_persistent_zikir") === "true";
+            if (zikirEnabled) {
+              import("@/lib/notifications").then(({ managePersistentZikirNotification }) => {
+                const logs = JSON.parse(localStorage.getItem("ikra_zikir_logs") || "{}");
+                const today = new Date().toISOString().split('T')[0];
+                const currentCount = (logs[today] && logs[today][pinned.name]) || 0;
+                managePersistentZikirNotification(true, pinned.target, currentCount, pinned.name);
+              });
+            }
+          });
         }
       });
     }).catch(() => {});
