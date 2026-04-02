@@ -58,9 +58,6 @@ export default function NotificationsPage({ onBack }: { onBack: () => void }) {
   const [expandedNotif, setExpandedNotif] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [permissionStatus, setPermissionStatus] = useState<string>(getNotificationPermission());
-  const [adminTapCount, setAdminTapCount] = useState(0);
-  const [showAdminTools, setShowAdminTools] = useState(localStorage.getItem("ikra_admin") === "true");
-  const [adminLoading, setAdminLoading] = useState(false);
   
   const [persistentEnabled, setPersistentEnabled] = useState<boolean>(() => {
     try { return JSON.parse(localStorage.getItem("ikra_persistent_notif") || "false"); } catch { return false; }
@@ -249,48 +246,6 @@ export default function NotificationsPage({ onBack }: { onBack: () => void }) {
       managePersistentZikirNotification(true, null, totalCount, "Genel Zikir");
     } else {
       managePersistentZikirNotification(false);
-    }
-  };
-
-  const handleAdminResetHatim = async () => {
-    if (!confirm("DİKKAT: Mevcut Global Hatim'i sıfırlamak istediğinize emin misiniz? Tüm cüzler boşaltılacak.")) return;
-    setAdminLoading(true);
-    const { data: groups } = await supabase.from("hatim_groups")
-      .select("id").eq("is_public", true).is("completed_at", null).limit(1);
-    
-    if (groups && groups[0]) {
-      await supabase.from("hatim_juz").update({
-        claimed_by: null, claimed_by_name: null, claimed_at: null, completed_at: null
-      }).eq("group_id", groups[0].id);
-      alert("Hatim sıfırlandı.");
-    }
-    setAdminLoading(false);
-  };
-
-  const handleAdminArchiveHatim = async () => {
-    if (!confirm("DİKKAT: Mevcut Global Hatim'i bitirip arşive almak istediğinize emin misiniz?")) return;
-    setAdminLoading(true);
-    const { data: groups } = await supabase.from("hatim_groups")
-      .select("id").eq("is_public", true).is("completed_at", null).limit(1);
-    
-    if (groups && groups[0]) {
-      await supabase.from("hatim_groups").update({
-        completed_at: new Date().toISOString()
-      }).eq("id", groups[0].id);
-      alert("Hatim arşive alındı. Yeni hatim otomatik oluşturulacak.");
-    }
-    setAdminLoading(false);
-  };
-
-  const handleVersionTap = () => {
-    const newCount = adminTapCount + 1;
-    setAdminTapCount(newCount);
-    if (newCount === 3) {
-      const isNowAdmin = !showAdminTools;
-      setShowAdminTools(isNowAdmin);
-      localStorage.setItem("ikra_admin", isNowAdmin ? "true" : "false");
-      setAdminTapCount(0);
-      alert(isNowAdmin ? "🔑 Yönetici Modu Açıldı!" : "Yönetici Modu Kapatıldı.");
     }
   };
 
@@ -640,38 +595,8 @@ export default function NotificationsPage({ onBack }: { onBack: () => void }) {
           </div>
         )}
 
-        {/* Admin Secret Tools */}
-        {showAdminTools && (
-          <div className="mt-2 mb-8 animate-in fade-in slide-in-from-bottom-4">
-             <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-accent italic">
-              ⭐ Yönetici Araçları
-            </h3>
-            <div className="rounded-xl bg-accent/5 border border-accent/20 p-4 space-y-4">
-              <div className="flex gap-2">
-                <button
-                  disabled={adminLoading}
-                  onClick={handleAdminResetHatim}
-                  className="flex-1 rounded-xl bg-destructive px-3 py-3 text-xs font-bold uppercase text-white shadow-sm active:scale-95 disabled:opacity-50"
-                >
-                  {adminLoading ? "Yükleniyor..." : "Global Hatimi Sıfırla"}
-                </button>
-                <button
-                  disabled={adminLoading}
-                  onClick={handleAdminArchiveHatim}
-                  className="flex-1 rounded-xl bg-accent px-3 py-3 text-xs font-bold uppercase text-foreground shadow-sm active:scale-95 disabled:opacity-50"
-                >
-                  {adminLoading ? "Yükleniyor..." : "Hatimi Bitir / Arşivle"}
-                </button>
-              </div>
-              <p className="text-[10px] text-center text-muted-foreground italic">
-                Bu araçlar tüm kullanıcılar için Global Hatim tablosunu etkiler.
-              </p>
-            </div>
-          </div>
-        )}
-
         {/* Footer Version */}
-        <div className="mt-8 mb-12 text-center" onClick={handleVersionTap}>
+        <div className="mt-8 mb-12 text-center">
           <p className="text-[10px] text-muted-foreground opacity-50 select-none">
             İKRA v1.4.3 | Antigravity AI Engine
           </p>

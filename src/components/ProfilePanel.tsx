@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
-type AdminTab = "wallpaper" | "daily" | "video" | "notifications" | "suggestions" | "users" | "facts" | "moods" | "tevekkul" | "dualar";
+type AdminTab = "wallpaper" | "daily" | "video" | "notifications" | "suggestions" | "users" | "facts" | "moods" | "tevekkul" | "dualar" | "hatim";
 
 interface AdminPanelProps {
   onClose: () => void;
@@ -115,6 +115,10 @@ export default function ProfilePanel({ onClose }: AdminPanelProps) {
   const [users, setUsers] = useState<any[]>([]);
   const [userRoles, setUserRoles] = useState<any[]>([]);
 
+  // Hatim state
+  const [activeHatim, setActiveHatim] = useState<any>(null);
+  const [hatimLoading, setHatimLoading] = useState(false);
+
   useEffect(() => {
     checkAuth();
   }, []);
@@ -183,6 +187,7 @@ export default function ProfilePanel({ onClose }: AdminPanelProps) {
     fetchMoods();
     fetchTevekkul();
     fetchDuaRequests();
+    fetchHatimData();
   };
 
   // ============ USERS ============
@@ -627,6 +632,33 @@ export default function ProfilePanel({ onClose }: AdminPanelProps) {
     fetchDuaRequests();
   };
 
+  // ============ HATIM ============
+  const fetchHatimData = async () => {
+    const { data } = await supabase.from("hatim_groups").select("*").eq("is_public", true).is("completed_at", null).order("created_at", { ascending: false }).limit(1);
+    if (data && data[0]) setActiveHatim(data[0]);
+  };
+
+  const adminResetHatim = async () => {
+    if (!activeHatim || !confirm("Global Hatimi sıfırlamak üzeresiniz. Emin misiniz?")) return;
+    setHatimLoading(true);
+    await supabase.from("hatim_juz").update({
+      claimed_by: null, claimed_by_name: null, claimed_at: null, completed_at: null
+    }).eq("group_id", activeHatim.id);
+    alert("Hatim sıfırlandı.");
+    setHatimLoading(false);
+  };
+
+  const adminArchiveHatim = async () => {
+    if (!activeHatim || !confirm("Global Hatimi bitirip arşive almak üzeresiniz. Emin misiniz?")) return;
+    setHatimLoading(true);
+    await supabase.from("hatim_groups").update({
+      completed_at: new Date().toISOString()
+    }).eq("id", activeHatim.id);
+    alert("Hatim arşive alındı.");
+    fetchHatimData();
+    setHatimLoading(false);
+  };
+
   // Helper: can user delete/edit this item?
   const canModify = (item: any) => {
     return isAdmin || isModerator;
@@ -680,6 +712,7 @@ export default function ProfilePanel({ onClose }: AdminPanelProps) {
     { key: "video", label: "Videolar", icon: "video_library" },
     { key: "notifications", label: "Bildirimler", icon: "notifications" },
     { key: "suggestions", label: "Öneriler", icon: "lightbulb" },
+    { key: "hatim", label: "Hatim", icon: "menu_book", adminOnly: true },
     { key: "users", label: "Kullanıcılar", icon: "group", adminOnly: true },
   ];
 
@@ -1348,6 +1381,47 @@ export default function ProfilePanel({ onClose }: AdminPanelProps) {
                       </div>
                    </div>
                  ))}
+               </div>
+            )}
+          </div>
+        )}
+
+        {/* ===== HATIM TAB ===== */}
+        {activeTab === "hatim" && isAdmin && (
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold text-foreground mb-4">Global Hatim Yönetimi</h3>
+            
+            {hatimLoading ? (
+               <div className="py-8 text-center"><span className="material-symbols-outlined animate-spin text-primary text-2xl">sync</span></div>
+            ) : !activeHatim ? (
+               <div className="py-8 text-center text-muted-foreground text-sm">Aktif hatim bulunamadı.</div>
+            ) : (
+               <div className="space-y-4">
+                 <div className="rounded-xl border border-primary/20 bg-card p-4 shadow-sm">
+                   <p className="text-sm font-bold mb-1">Mevcut Hatim: {activeHatim.name}</p>
+                   <p className="text-xs text-muted-foreground mb-4">Kod: {activeHatim.invite_code}</p>
+                   
+                   <div className="grid grid-cols-2 gap-3">
+                     <button 
+                        onClick={adminResetHatim}
+                        className="rounded-xl bg-destructive px-3 py-3 text-xs font-bold uppercase text-white shadow-sm active:scale-95"
+                     >
+                       Sıfırla
+                     </button>
+                     <button 
+                        onClick={adminArchiveHatim}
+                        className="rounded-xl bg-primary px-3 py-3 text-xs font-bold uppercase text-white shadow-sm active:scale-95"
+                     >
+                       Bitir ve Arşivle
+                     </button>
+                   </div>
+                 </div>
+                 
+                 <div className="rounded-xl bg-accent/5 border border-accent/20 p-3 italic">
+                    <p className="text-[10px] text-center text-muted-foreground">
+                      Buradan yapılan işlemler anında tüm kullanıcılara yansır.
+                    </p>
+                 </div>
                </div>
             )}
           </div>
