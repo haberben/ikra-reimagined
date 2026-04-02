@@ -108,15 +108,16 @@ const App = () => {
     };
   }, [city]);
 
-// Background Zikir Action Listener - Registered at module level for maximum reliability
+// Background Zikir Action Listener - Optimized for silent background processing
 import("@capacitor/local-notifications").then(({ LocalNotifications }) => {
   LocalNotifications.addListener('localNotificationActionPerformed', (notification) => {
+    // Only handle increment_zikir silently
     if (notification.actionId === 'increment_zikir') {
       import("@/lib/zikir").then(({ logZikir, getPinnedZikir }) => {
         const pinned = getPinnedZikir();
         logZikir(pinned.name, 1);
         
-        // Re-trigger the persistent notification update immediately
+        // Sync counting to localStorage for immediate consistency
         const zikirEnabled = localStorage.getItem("ikra_persistent_zikir") === "true";
         if (zikirEnabled) {
           import("@/lib/notifications").then(({ managePersistentZikirNotification }) => {

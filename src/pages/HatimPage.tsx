@@ -55,7 +55,7 @@ export default function HatimPage({ onMenuOpen, onNotifications }: HatimPageProp
   const [expandedArchive, setExpandedArchive] = useState<string | null>(null);
   const [archivedSlots, setArchivedSlots] = useState<JuzSlot[]>([]);
   const [archivedGroups, setArchivedGroups] = useState<HatimGroup[]>([]);
-  const isAdmin = (claimName.toLowerCase() === "admin" || userNameValue.toLowerCase() === "admin" || localStorage.getItem("ikra_admin") === "true");
+  const isAdmin = (userNameValue.toLowerCase() === "admin" || localStorage.getItem("ikra_admin") === "true");
 
   const userId = localStorage.getItem("ikra_user_id") || (() => {
     const id = crypto.randomUUID();
