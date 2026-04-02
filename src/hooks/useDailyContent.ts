@@ -33,8 +33,16 @@ export function useDailyContent() {
         .eq("date", today);
 
       if (data && data.length > 0) {
-        setAyet(data.find((d) => d.type === "ayet") || null);
-        setHadis(data.find((d) => d.type === "hadis") || null);
+        const d_ayet = data.find((d) => d.type === "ayet");
+        const d_hadis = data.find((d) => d.type === "hadis");
+        if (d_ayet) {
+          setAyet(d_ayet);
+          localStorage.setItem("ikra_daily_ayet", d_ayet.turkish_text);
+        }
+        if (d_hadis) {
+          setHadis(d_hadis);
+          localStorage.setItem("ikra_daily_hadis", d_hadis.turkish_text);
+        }
         setLoading(false);
         return;
       }

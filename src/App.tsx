@@ -27,7 +27,7 @@ const queryClient = new QueryClient();
 
 import { getStableUserId, syncUserProfile } from "@/lib/user";
 
-const APP_VERSION = "1.4.0"; // Current v1.4
+const APP_VERSION = "1.4.3"; // v1.4.3 build 11
 
 const App = () => {
   const [onboarded, setOnboarded] = useState(() => localStorage.getItem("ikra_onboarded") === "true");
@@ -102,34 +102,34 @@ const App = () => {
       setAuthEmail(session?.user?.user_metadata?.full_name || session?.user?.email || null);
     });
 
-    // Background Zikir Action Listener
-    import("@capacitor/local-notifications").then(({ LocalNotifications }) => {
-      LocalNotifications.addListener('localNotificationActionPerformed', (notification) => {
-        if (notification.actionId === 'increment_zikir') {
-          import("@/lib/zikir").then(({ logZikir, getPinnedZikir }) => {
-            const pinned = getPinnedZikir();
-            logZikir(pinned.name, 1);
-            
-            // Re-trigger the persistent notification update immediately
-            const zikirEnabled = localStorage.getItem("ikra_persistent_zikir") === "true";
-            if (zikirEnabled) {
-              import("@/lib/notifications").then(({ managePersistentZikirNotification }) => {
-                const logs = JSON.parse(localStorage.getItem("ikra_zikir_logs") || "{}");
-                const today = new Date().toISOString().split('T')[0];
-                const currentCount = (logs[today] && logs[today][pinned.name]) || 0;
-                managePersistentZikirNotification(true, pinned.target, currentCount, pinned.name);
-              });
-            }
-          });
-        }
-      });
-    }).catch(() => {});
-
     return () => {
       window.removeEventListener("open-profile", handleOpenProfile);
       subscription.unsubscribe();
     };
   }, [city]);
+
+// Background Zikir Action Listener - Registered at module level for maximum reliability
+import("@capacitor/local-notifications").then(({ LocalNotifications }) => {
+  LocalNotifications.addListener('localNotificationActionPerformed', (notification) => {
+    if (notification.actionId === 'increment_zikir') {
+      import("@/lib/zikir").then(({ logZikir, getPinnedZikir }) => {
+        const pinned = getPinnedZikir();
+        logZikir(pinned.name, 1);
+        
+        // Re-trigger the persistent notification update immediately
+        const zikirEnabled = localStorage.getItem("ikra_persistent_zikir") === "true";
+        if (zikirEnabled) {
+          import("@/lib/notifications").then(({ managePersistentZikirNotification }) => {
+            const logs = JSON.parse(localStorage.getItem("ikra_zikir_logs") || "{}");
+            const today = new Date().toISOString().split('T')[0];
+            const currentCount = (logs[today] && logs[today][pinned.name]) || 0;
+            managePersistentZikirNotification(true, pinned.target, currentCount, pinned.name);
+          });
+        }
+      });
+    }
+  });
+}).catch(() => {});
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);

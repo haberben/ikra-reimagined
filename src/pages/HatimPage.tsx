@@ -51,8 +51,9 @@ export default function HatimPage({ onMenuOpen, onNotifications }: HatimPageProp
   const [activePrivateGroup, setActivePrivateGroup] = useState<HatimGroup | null>(null);
   const [privateJuz, setPrivateJuz] = useState<JuzSlot[]>([]);
   const [showConfetti, setShowConfetti] = useState(false);
-
   const userNameValue = localStorage.getItem("ikra_name") || "";
+  const [expandedArchive, setExpandedArchive] = useState<string | null>(null);
+  const [archivedSlots, setArchivedSlots] = useState<JuzSlot[]>([]);
   const [archivedGroups, setArchivedGroups] = useState<HatimGroup[]>([]);
   const isAdmin = (claimName.toLowerCase() === "admin" || userNameValue.toLowerCase() === "admin" || localStorage.getItem("ikra_admin") === "true");
 
@@ -66,7 +67,27 @@ export default function HatimPage({ onMenuOpen, onNotifications }: HatimPageProp
     loadGlobalHatim();
     loadPrivateGroups();
     loadArchivedHatims();
-  }, [claimName]);
+    if (isAdmin) cleanupOldHatims();
+  }, [claimName, isAdmin]);
+
+  const cleanupOldHatims = async () => {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    try {
+      const { data: oldGroups } = await supabase
+        .from("hatim_groups")
+        .select("id")
+        .eq("is_public", true)
+        .lt("completed_at", thirtyDaysAgo.toISOString());
+
+      if (oldGroups && oldGroups.length > 0) {
+        const ids = oldGroups.map(g => g.id);
+        await supabase.from("hatim_juz").delete().in("group_id", ids);
+        await supabase.from("hatim_groups").delete().in("id", ids);
+        console.log("Old global hatims cleaned up.");
+      }
+    } catch {}
+  };
 
   const loadGlobalHatim = async () => {
     setLoading(true);
@@ -106,7 +127,7 @@ export default function HatimPage({ onMenuOpen, onNotifications }: HatimPageProp
       .eq("is_public", true)
       .not("completed_at", "is", null)
       .gt("completed_at", thirtyDaysAgo.toISOString())
-      .order("completed_at", { ascending: false });
+      .order("completed_at", { ascending: true }); // Ascending to help calculate sequence
     
     if (data) setArchivedGroups(data);
   };
@@ -186,6 +207,24 @@ export default function HatimPage({ onMenuOpen, onNotifications }: HatimPageProp
     loadJuz(groupId, false);
   };
 
+  const handleManualArchive = async (groupId: string) => {
+    if (!confirm("Bu hatimi şu anki haliyle bitirip arşive almak istediğinize emin misiniz?")) return;
+    
+    setLoading(true);
+    // Mark as completed
+    await supabase.from("hatim_groups").update({ completed_at: new Date().toISOString() }).eq("id", groupId);
+    
+    // Confetti effect
+    setShowConfetti(true);
+    
+    // Picker up new group
+    setTimeout(() => {
+      loadGlobalHatim();
+      loadArchivedHatims();
+      setLoading(false);
+    }, 2000);
+  };
+
   const createGroup = async () => {
     const code = Math.random().toString(36).substring(2, 8).toUpperCase();
     const { data: newGroup } = await supabase
@@ -232,12 +271,20 @@ export default function HatimPage({ onMenuOpen, onNotifications }: HatimPageProp
             <div className="flex gap-2">
               <span className="text-xs opacity-70">{claimed} katılımcı</span>
               {isAdmin && (
-                <button 
-                  onClick={() => handleResetGroup(groupId)}
-                  className="bg-destructive/20 hover:bg-destructive/40 text-[10px] px-2 py-0.5 rounded-md"
-                >
-                  Sıfırla
-                </button>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => handleResetGroup(groupId)}
+                    className="bg-destructive/20 hover:bg-destructive/40 text-[10px] px-2 py-0.5 rounded-md"
+                  >
+                    Sıfırla
+                  </button>
+                  <button 
+                    onClick={() => handleManualArchive(groupId)}
+                    className="bg-accent/20 hover:bg-accent/40 text-[10px] px-2 py-0.5 rounded-md"
+                  >
+                    Bitir ve Arşivle
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -353,17 +400,46 @@ export default function HatimPage({ onMenuOpen, onNotifications }: HatimPageProp
           
           {archivedGroups.length > 0 && (
             <div className="mt-8 border-t border-primary/10 pt-4 pb-4">
-              <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-muted-foreground">Geçmiş Hatimler (Son 1 Ay)</h3>
+              <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-muted-foreground">Geçmiş Hatimler</h3>
               <div className="space-y-2">
-                {archivedGroups.map((g) => (
-                   <div key={g.id} className="flex items-center justify-between rounded-xl bg-secondary/30 p-3">
-                      <div>
-                        <p className="text-xs font-bold">{g.name}</p>
-                        <p className="text-[10px] text-muted-foreground">
-                          {new Date(g.completed_at!).toLocaleDateString("tr-TR")} tarihinde tamamlandı
-                        </p>
+                {archivedGroups.map((g, idx) => (
+                   <div key={g.id} className="rounded-xl bg-secondary/30 p-3 overflow-hidden">
+                      <div 
+                        className="flex items-center justify-between cursor-pointer"
+                        onClick={async () => {
+                          if (expandedArchive === g.id) {
+                            setExpandedArchive(null);
+                          } else {
+                            const { data } = await supabase.from("hatim_juz").select("*").eq("group_id", g.id).order("juz_number");
+                            if (data) setArchivedSlots(data);
+                            setExpandedArchive(g.id);
+                          }
+                        }}
+                      >
+                        <div>
+                          <p className="text-xs font-bold">Hatim #{idx + 1}</p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {new Date(g.completed_at!).toLocaleDateString("tr-TR")} tamamlandı
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">DOLDU</span>
+                          <span className="material-symbols-outlined text-muted-foreground text-[18px]">
+                            {expandedArchive === g.id ? "expand_less" : "expand_more"}
+                          </span>
+                        </div>
                       </div>
-                      <span className="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary italic">DOLDU</span>
+                      
+                      {expandedArchive === g.id && (
+                        <div className="mt-3 grid grid-cols-2 gap-2 border-t border-primary/5 pt-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                           {archivedSlots.map((j) => (
+                             <div key={j.id} className="flex flex-col rounded-lg bg-card/50 p-2 border border-primary/5">
+                               <p className="text-center text-[10px] font-bold text-primary">Cüz {j.juz_number}</p>
+                               <p className="text-center text-[9px] truncate text-muted-foreground">{j.claimed_by_name || "Bilinmiyor"}</p>
+                             </div>
+                           ))}
+                        </div>
+                      )}
                    </div>
                 ))}
               </div>

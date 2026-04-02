@@ -130,152 +130,131 @@ export default function ZikirmatikPage({ onBack }: { onBack: () => void }) {
 
 
       <div className="flex flex-1 flex-col px-4 pt-4">
-        {/* Tab switch */}
-        <div className="mb-6 flex w-full rounded-2xl bg-secondary p-1">
-          <button
-            onClick={() => setActiveTab("counter")}
-            className={cn(
-              "flex-1 rounded-xl py-2.5 text-sm font-bold transition-all",
-              activeTab === "counter" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
-            )}
-          >
-            Zikir Çek
-          </button>
-          <button
-            onClick={() => setActiveTab("stats")}
-            className={cn(
-              "flex-1 rounded-xl py-2.5 text-sm font-bold transition-all",
-              activeTab === "stats" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
-            )}
-          >
-            İstatistikler
-          </button>
-        </div>
-
-        {activeTab === "counter" ? (
-          <div className="flex flex-col items-center">
-            {/* Preset selector */}
-            <div className="mb-6 flex gap-2 overflow-x-auto scrollbar-hide pb-2 w-full">
-              {DHIKR_PRESETS.map((p, i) => (
-                <button
-                  key={i}
-                  onClick={() => { setSelectedPreset(i); setCount(0); setCustomTarget(null); }}
-                  className={cn(
-                    "shrink-0 flex items-center gap-2 rounded-full px-4 py-2 text-xs font-medium transition-colors",
-                    i === selectedPreset
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-primary/5 border border-primary/10"
-                  )}
-                >
-                  {p.name}
-                  <button 
-                    onClick={(e) => handlePin(e, p)}
-                    className={cn(
-                      "flex h-5 w-5 items-center justify-center rounded-full transition-colors",
-                      pinnedZikir.name === p.name ? "bg-accent/20 text-accent" : "hover:bg-primary/20"
-                    )}
-                    title="Kilit Ekranına Sabitle"
-                  >
-                    <span className="material-symbols-outlined text-[14px]">
-                      {pinnedZikir.name === p.name ? "push_pin" : "push_pin_out"}
-                    </span>
-                  </button>
-                </button>
-              ))}
-            </div>
-
-            {/* Arabic text */}
-            <p className="font-arabic text-3xl leading-relaxed text-primary mt-2" dir="rtl">
-              {preset.arabic}
-            </p>
-            <p className="mt-1 text-sm text-muted-foreground">{preset.name}</p>
-
-            {/* Counter circle */}
-            <button
-              onClick={handleTap}
-              className={cn(
-                "relative mt-8 flex h-56 w-56 items-center justify-center rounded-full border-4 transition-all active:scale-95",
-                completed
-                  ? "border-accent bg-accent/10"
-                  : "border-primary/20 bg-primary/5 active:bg-primary/10"
-              )}
-            >
-              {/* Progress ring */}
-              <svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 224 224">
-                <circle
-                  cx="112" cy="112" r="106"
-                  fill="none"
-                  stroke="hsl(var(--primary))"
-                  strokeOpacity="0.1"
-                  strokeWidth="4"
-                />
-                <circle
-                  cx="112" cy="112" r="106"
-                  fill="none"
-                  stroke={completed ? "hsl(var(--accent))" : "hsl(var(--primary))"}
-                  strokeWidth="4"
-                  strokeLinecap="round"
-                  strokeDasharray={`${2 * Math.PI * 106}`}
-                  strokeDashoffset={`${2 * Math.PI * 106 * (1 - progress / 100)}`}
-                  className="transition-all duration-300"
-                />
-              </svg>
-
-              <div className="flex flex-col items-center z-10">
-                <span className={cn(
-                  "text-6xl font-extrabold",
-                  completed ? "text-accent" : "text-primary"
-                )}>
-                  {count}
-                </span>
-                <span className="text-sm text-muted-foreground mt-1">/ {target}</span>
-              </div>
-            </button>
-
-            {completed && (
-              <div className="mt-4 text-center animate-pulse-glow">
-                <span className="material-symbols-outlined text-accent text-[32px]">check_circle</span>
-                <p className="text-sm font-bold text-accent mt-1">Tamamlandı! Maşallah!</p>
-              </div>
-            )}
-
-            {/* Controls */}
-            <div className="mt-6 flex gap-4">
+        {/* Counter Area */}
+        <div className="flex flex-col items-center">
+          {/* Preset selector */}
+          <div className="mb-6 flex gap-2 overflow-x-auto scrollbar-hide pb-2 w-full">
+            {DHIKR_PRESETS.map((p, i) => (
               <button
-                onClick={handleReset}
-                className="flex items-center gap-2 rounded-xl bg-primary/10 px-5 py-3 text-sm font-medium text-primary"
+                key={i}
+                onClick={() => { setSelectedPreset(i); setCount(0); setCustomTarget(null); }}
+                className={cn(
+                  "shrink-0 flex items-center gap-2 rounded-full px-4 py-2 text-xs font-medium transition-colors",
+                  i === selectedPreset
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-primary/5 border border-primary/10"
+                )}
               >
-                <span className="material-symbols-outlined text-[20px]">restart_alt</span>
-                Sıfırla
-              </button>
-              {completed && (
-                <button
-                  onClick={handleNextDhikr}
-                  className="flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground"
+                {p.name}
+                <button 
+                  onClick={(e) => handlePin(e, p)}
+                  className={cn(
+                    "flex h-5 w-5 items-center justify-center rounded-full transition-colors",
+                    pinnedZikir.name === p.name ? "bg-accent/20 text-accent" : "hover:bg-primary/20 text-muted-foreground"
+                  )}
+                  title="Kilit Ekranına Sabitle"
                 >
-                  <span className="material-symbols-outlined text-[20px]">skip_next</span>
-                  Sonraki
+                  <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: pinnedZikir.name === p.name ? "'FILL' 1" : "'FILL' 0" }}>
+                    push_pin
+                  </span>
                 </button>
-              )}
-            </div>
+              </button>
+            ))}
+          </div>
 
-            {/* Total counter */}
-            <div className="mt-8 rounded-xl border border-primary/10 bg-card p-4 shadow-sm w-full">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Toplam Zikir</p>
-                  <p className="text-2xl font-extrabold text-primary">{totalCount.toLocaleString("tr-TR")}</p>
-                </div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                  <span className="material-symbols-outlined text-primary text-[28px]">counter_1</span>
-                </div>
+          {/* Arabic text */}
+          <p className="font-arabic text-3xl leading-relaxed text-primary mt-2" dir="rtl">
+            {preset.arabic}
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">{preset.name}</p>
+
+          {/* Counter circle */}
+          <button
+            onClick={handleTap}
+            className={cn(
+              "relative mt-8 flex h-56 w-56 items-center justify-center rounded-full border-4 transition-all active:scale-95",
+              completed
+                ? "border-accent bg-accent/10"
+                : "border-primary/20 bg-primary/5 active:bg-primary/10"
+            )}
+          >
+            {/* Progress ring */}
+            <svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 224 224">
+              <circle
+                cx="112" cy="112" r="106"
+                fill="none"
+                stroke="hsl(var(--primary))"
+                strokeOpacity="0.1"
+                strokeWidth="4"
+              />
+              <circle
+                cx="112" cy="112" r="106"
+                fill="none"
+                stroke={completed ? "hsl(var(--accent))" : "hsl(var(--primary))"}
+                strokeWidth="4"
+                strokeLinecap="round"
+                strokeDasharray={`${2 * Math.PI * 106}`}
+                strokeDashoffset={`${2 * Math.PI * 106 * (1 - progress / 100)}`}
+                className="transition-all duration-300"
+              />
+            </svg>
+
+            <div className="flex flex-col items-center z-10">
+              <span className={cn(
+                "text-6xl font-extrabold",
+                completed ? "text-accent" : "text-primary"
+              )}>
+                {count}
+              </span>
+              <span className="text-sm text-muted-foreground mt-1">/ {target}</span>
+            </div>
+          </button>
+
+          {completed && (
+            <div className="mt-4 text-center animate-pulse-glow">
+              <span className="material-symbols-outlined text-accent text-[32px]">check_circle</span>
+              <p className="text-sm font-bold text-accent mt-1">Tamamlandı! Maşallah!</p>
+            </div>
+          )}
+
+          {/* Controls */}
+          <div className="mt-6 flex gap-4">
+            <button
+              onClick={handleReset}
+              className="flex items-center gap-2 rounded-xl bg-primary/10 px-5 py-3 text-sm font-medium text-primary"
+            >
+              <span className="material-symbols-outlined text-[20px]">restart_alt</span>
+              Sıfırla
+            </button>
+            {completed && (
+              <button
+                onClick={handleNextDhikr}
+                className="flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground"
+              >
+                <span className="material-symbols-outlined text-[20px]">skip_next</span>
+                Sonraki
+              </button>
+            )}
+          </div>
+
+          {/* Total counter */}
+          <div className="mt-8 rounded-xl border border-primary/10 bg-card p-4 shadow-sm w-full">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">Toplam Zikir</p>
+                <p className="text-2xl font-extrabold text-primary">{totalCount.toLocaleString("tr-TR")}</p>
+              </div>
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                <span className="material-symbols-outlined text-primary text-[28px]">counter_1</span>
               </div>
             </div>
           </div>
-        ) : (
-          <div className="flex flex-col gap-6">
-            {/* Chart */}
-            <div className="rounded-2xl border border-primary/10 bg-card p-5 shadow-sm">
+        </div>
+
+        {/* Stats Section (Merged) */}
+        <div className="mt-12 mb-8 flex flex-col gap-6">
+          <div className="islamic-pattern rounded-xl p-0.5 bg-primary/10">
+            <div className="rounded-[10px] bg-card p-5">
               <h3 className="text-sm font-bold text-primary flex items-center gap-2 mb-6">
                 <span className="material-symbols-outlined text-[18px]">bar_chart</span>
                 Son 7 Günün Özeti
@@ -301,31 +280,30 @@ export default function ZikirmatikPage({ onBack }: { onBack: () => void }) {
                 ))}
               </div>
             </div>
-
-            {/* Detailed logs */}
-            <div className="rounded-2xl border border-primary/10 bg-card p-5 shadow-sm">
-              <h3 className="text-sm font-bold text-primary flex items-center gap-2 mb-4">
-                <span className="material-symbols-outlined text-[18px]">history</span>
-                Bugünün Dağılımı
-              </h3>
-              
-              <div className="space-y-3">
-                {Object.entries(todayLogs).length > 0 ? (
-                  Object.entries(todayLogs).map(([name, count], i) => (
-                    <div key={i} className="flex items-center justify-between py-2 border-b border-primary/5 last:border-0">
-                      <span className="text-sm font-medium">{name}</span>
-                      <span className="text-sm font-bold text-primary">{count}</span>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-center py-4 text-xs text-muted-foreground italic">Henüz bugün için zikir kaydı yok.</p>
-                )}
-              </div>
-            </div>
-            
-            <p className="text-[10px] text-center text-muted-foreground">İstatistikler her gece 00:00'da sonraki güne devredilir.</p>
           </div>
-        )}
+
+          <div className="rounded-2xl border border-primary/10 bg-card p-5 shadow-sm">
+            <h3 className="text-sm font-bold text-primary flex items-center gap-2 mb-4">
+              <span className="material-symbols-outlined text-[18px]">history</span>
+              Bugünün Dağılımı
+            </h3>
+            
+            <div className="space-y-3">
+              {Object.entries(todayLogs).length > 0 ? (
+                Object.entries(todayLogs).map(([name, count], i) => (
+                  <div key={i} className="flex items-center justify-between py-2 border-b border-primary/5 last:border-0">
+                    <span className="text-sm font-medium">{name}</span>
+                    <span className="text-sm font-bold text-primary">{count}</span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-center py-4 text-xs text-muted-foreground italic">Henüz bugün için zikir kaydı yok.</p>
+              )}
+            </div>
+          </div>
+          
+          <p className="text-[10px] text-center text-muted-foreground">İstatistikler her gece 00:00'da sonraki güne devredilir.</p>
+        </div>
       </div>
 
       {/* Settings Modal */}

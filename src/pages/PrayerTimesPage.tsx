@@ -26,6 +26,28 @@ const PRAYERS = [
 
 const TIME_OPTIONS = ["Vakitte", "5 dk önce", "10 dk önce", "15 dk önce", "30 dk önce"];
 
+const HIJRI_MONTHS_TR: Record<string, string> = {
+  "Muharram": "Muharrem",
+  "Safar": "Safer",
+  "Rabi' al-awwal": "Rebiülevvel",
+  "Rabi' ath-thani": "Rebiülahir",
+  "Jumada al-ula": "Cemaziyelevvel",
+  "Jumada al-akhira": "Cemaziyelahir",
+  "Rajab": "Recep",
+  "Sha'ban": "Şaban",
+  "Ramadan": "Ramazan",
+  "Shawwal": "Şevval",
+  "Dhu al-Qi'dah": "Zilkade",
+  "Dhu al-Hijjah": "Zilhicce"
+};
+
+function getHijriDateTr(hj: any) {
+  if (!hj) return "";
+  const monthEn = hj.month.en;
+  const monthTr = HIJRI_MONTHS_TR[monthEn] || monthEn;
+  return `${hj.day} ${monthTr.toUpperCase()} ${hj.year}`;
+}
+
 // Kaaba coordinates
 const KAABA_LAT = 21.4225;
 const KAABA_LNG = 39.8262;
@@ -139,7 +161,7 @@ export default function PrayerTimesPage({ city, setCity, onNotifications, onMenu
     }
   });
   
-  const { times, loading } = usePrayerTimes(city, coords);
+  const { times, hijri, weekly, loading } = usePrayerTimes(city, coords);
   const { ayet, hadis } = useDailyContent();
   const { toggleFavorite, isFavorite } = useFavorites();
   const [notifications, setNotifications] = useState<Record<string, boolean>>(() => {
@@ -303,7 +325,7 @@ export default function PrayerTimesPage({ city, setCity, onNotifications, onMenu
     <div className="pb-20">
       <StickyHeader
         title="İKRA"
-        subtitle="NAMAZ VAKİTLERİ"
+        subtitle={hijri ? `BUGÜN - ${getHijriDateTr(hijri)}` : "NAMAZ VAKİTLERİ"}
         onLeftClick={onMenuOpen}
         onRightClick={onNotifications}
       />
@@ -377,58 +399,95 @@ export default function PrayerTimesPage({ city, setCity, onNotifications, onMenu
             <span className="material-symbols-outlined animate-spin text-primary">progress_activity</span>
           </div>
         ) : times ? (
-          <div className="space-y-3">
-            {PRAYERS.map((p) => (
-              <div key={p.key} className="rounded-xl border border-primary/10 bg-card p-4 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                      <span className="material-symbols-outlined text-primary">{p.icon}</span>
+          <div className="space-y-4">
+            {/* Current Day Cards */}
+            <div className="space-y-3">
+              {PRAYERS.map((p) => (
+                <div key={p.key} className="rounded-xl border border-primary/10 bg-card p-4 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                        <span className="material-symbols-outlined text-primary">{p.icon}</span>
+                      </div>
+                      <div>
+                        <p className="font-bold">{p.name}</p>
+                        <p className="text-lg font-extrabold text-primary">
+                          {(times as any)[p.key]}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-bold">{p.name}</p>
-                      <p className="text-lg font-extrabold text-primary">
-                        {(times as any)[p.key]}
-                      </p>
+                  </div>
+
+                  {/* Notification toggle */}
+                  <div className="mt-3 flex items-center justify-between border-t border-primary/5 pt-3">
+                    <span className="text-xs text-muted-foreground">Bildirim</span>
+                    <div className="flex items-center gap-2">
+                      {notifications[p.key] && (
+                        <select
+                          value={notifTimes[p.key] || "Vakitte"}
+                          onChange={(e) => {
+                            const updated = { ...notifTimes, [p.key]: e.target.value };
+                            setNotifTimes(updated);
+                            localStorage.setItem("ikra_notif_times", JSON.stringify(updated));
+                          }}
+                          className="rounded-lg bg-secondary px-2 py-1 text-xs"
+                        >
+                          {TIME_OPTIONS.map((t) => (
+                            <option key={t}>{t}</option>
+                          ))}
+                        </select>
+                      )}
+                      <button
+                        onClick={() => handleToggleNotif(p.key)}
+                        className={cn(
+                          "h-[31px] w-[51px] rounded-full transition-colors",
+                          notifications[p.key] ? "bg-primary" : "bg-muted"
+                        )}
+                      >
+                        <div className={cn(
+                          "h-[27px] w-[27px] rounded-full bg-card shadow transition-transform",
+                          notifications[p.key] ? "translate-x-[22px]" : "translate-x-[2px]"
+                        )} />
+                      </button>
                     </div>
                   </div>
                 </div>
+              ))}
+            </div>
 
-                {/* Notification toggle */}
-                <div className="mt-3 flex items-center justify-between border-t border-primary/5 pt-3">
-                  <span className="text-xs text-muted-foreground">Bildirim</span>
-                  <div className="flex items-center gap-2">
-                    {notifications[p.key] && (
-                      <select
-                        value={notifTimes[p.key] || "Vakitte"}
-                        onChange={(e) => {
-                          const updated = { ...notifTimes, [p.key]: e.target.value };
-                          setNotifTimes(updated);
-                          localStorage.setItem("ikra_notif_times", JSON.stringify(updated));
-                        }}
-                        className="rounded-lg bg-secondary px-2 py-1 text-xs"
-                      >
-                        {TIME_OPTIONS.map((t) => (
-                          <option key={t}>{t}</option>
-                        ))}
-                      </select>
-                    )}
-                    <button
-                      onClick={() => handleToggleNotif(p.key)}
-                      className={cn(
-                        "h-[31px] w-[51px] rounded-full transition-colors",
-                        notifications[p.key] ? "bg-primary" : "bg-muted"
-                      )}
-                    >
-                      <div className={cn(
-                        "h-[27px] w-[27px] rounded-full bg-card shadow transition-transform",
-                        notifications[p.key] ? "translate-x-[22px]" : "translate-x-[2px]"
-                      )} />
-                    </button>
-                  </div>
+            {/* Future Days Section */}
+            {weekly.length > 1 && (
+              <div className="mt-8">
+                <h3 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-primary">
+                  <span className="material-symbols-outlined text-[18px]">calendar_month</span>
+                  Gelecek Günler
+                </h3>
+                <div className="space-y-3">
+                  {weekly.slice(1).map((day, idx) => {
+                    const dateObj = new Date(day.date);
+                    const dayName = dateObj.toLocaleDateString('tr-TR', { weekday: 'long' });
+                    const isExtra = idx === 0 ? "Yarın" : dayName;
+                    
+                    return (
+                      <div key={idx} className="rounded-xl border border-primary/10 bg-card p-4 shadow-sm overflow-hidden">
+                        <div className="mb-2 flex items-center justify-between border-b border-primary/5 pb-2">
+                          <span className="text-xs font-bold text-primary">{isExtra}</span>
+                          <span className="text-[10px] text-muted-foreground">{getHijriDateTr(day.hijri)}</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2">
+                          {PRAYERS.map((p) => (
+                            <div key={p.key} className="text-center">
+                              <p className="text-[10px] text-muted-foreground">{p.name}</p>
+                              <p className="text-xs font-bold">{(day.times as any)[p.key]}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-            ))}
+            )}
           </div>
         ) : null}
 
