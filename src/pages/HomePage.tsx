@@ -41,10 +41,11 @@ interface HomePageProps {
 
 const HIJRI_MONTHS_TR: Record<string, string> = {
   "Muharram": "Muharrem", "Safar": "Safer", "Rabi' al-awwal": "Rebiülevvel",
-  "Rabi' al-thani": "Rebiülahir", "Jumada al-ula": "Cemaziyelevvel",
-  "Jumada al-akhira": "Cemaziyelahir", "Rajab": "Recep", "Sha'ban": "Şaban",
-  "Ramadan": "Ramazan", "Shawwal": "Şevval", "Dhu al-Qi'dah": "Zilkade",
-  "Dhu al-Hijjah": "Zilhicce"
+  "Rabi' al-thani": "Rebiülahir", "Rabi' ath-thani": "Rebiülahir",
+  "Jumada al-ula": "Cemaziyelevvel", "Jumada al-akhira": "Cemaziyelahir",
+  "Rajab": "Recep", "Sha'ban": "Şaban", "Ramadan": "Ramazan",
+  "Shawwal": "Şevval", "Shawwāl": "Şevval",
+  "Dhu al-Qi'dah": "Zilkade", "Dhu al-Hijjah": "Zilhicce"
 };
 
 const GREGORIAN_MONTHS_TR: Record<string, string> = {
@@ -89,7 +90,7 @@ export default function HomePage({ city, coords, onNavigate, onNotifications, on
               {hijri.day} {hijri.month.ar} {hijri.year}
             </p>
             <p className="text-xs text-primary-foreground/60 mt-0.5">
-              {hijri.day} {HIJRI_MONTHS_TR[hijri.month.en] || hijri.month.en} {hijri.year}
+              {hijri.day} {HIJRI_MONTHS_TR[hijri.month.en] || HIJRI_MONTHS_TR[hijri.month.en.replace(/ā/g, 'a')] || hijri.month.en} {hijri.year}
             </p>
           </div>
         )}

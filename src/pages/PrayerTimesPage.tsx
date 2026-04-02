@@ -27,24 +27,18 @@ const PRAYERS = [
 const TIME_OPTIONS = ["Vakitte", "5 dk önce", "10 dk önce", "15 dk önce", "30 dk önce"];
 
 const HIJRI_MONTHS_TR: Record<string, string> = {
-  "Muharram": "Muharrem",
-  "Safar": "Safer",
-  "Rabi' al-awwal": "Rebiülevvel",
-  "Rabi' ath-thani": "Rebiülahir",
-  "Jumada al-ula": "Cemaziyelevvel",
-  "Jumada al-akhira": "Cemaziyelahir",
-  "Rajab": "Recep",
-  "Sha'ban": "Şaban",
-  "Ramadan": "Ramazan",
-  "Shawwal": "Şevval",
-  "Dhu al-Qi'dah": "Zilkade",
-  "Dhu al-Hijjah": "Zilhicce"
+  "Muharram": "Muharrem", "Safar": "Safer", "Rabi' al-awwal": "Rebiülevvel",
+  "Rabi' al-thani": "Rebiülahir", "Rabi' ath-thani": "Rebiülahir",
+  "Jumada al-ula": "Cemaziyelevvel", "Jumada al-akhira": "Cemaziyelahir",
+  "Rajab": "Recep", "Sha'ban": "Şaban", "Ramadan": "Ramazan",
+  "Shawwal": "Şevval", "Shawwāl": "Şevval",
+  "Dhu al-Qi'dah": "Zilkade", "Dhu al-Hijjah": "Zilhicce"
 };
 
 function getHijriDateTr(hj: any) {
   if (!hj) return "";
   const monthEn = hj.month.en;
-  const monthTr = HIJRI_MONTHS_TR[monthEn] || monthEn;
+  const monthTr = HIJRI_MONTHS_TR[monthEn] || HIJRI_MONTHS_TR[monthEn.replace(/ā/g, 'a')] || monthEn;
   return `${hj.day} ${monthTr.toUpperCase()} ${hj.year}`;
 }
 
