@@ -11,6 +11,7 @@ import {
   setNotifSoundPref,
   managePersistentNotification,
   scheduleTevekkulNotification,
+  managePersistentZikirNotification,
   type NotifSound,
 } from "@/lib/notifications";
 
@@ -60,6 +61,10 @@ export default function NotificationsPage({ onBack }: { onBack: () => void }) {
   
   const [persistentEnabled, setPersistentEnabled] = useState<boolean>(() => {
     try { return JSON.parse(localStorage.getItem("ikra_persistent_notif") || "false"); } catch { return false; }
+  });
+
+  const [persistentZikirEnabled, setPersistentZikirEnabled] = useState<boolean>(() => {
+    try { return JSON.parse(localStorage.getItem("ikra_persistent_zikir") || "false"); } catch { return false; }
   });
 
   const [autoLocationEnabled, setAutoLocationEnabled] = useState<boolean>(() => {
@@ -225,6 +230,25 @@ export default function NotificationsPage({ onBack }: { onBack: () => void }) {
     localStorage.setItem("ikra_pin_daily", JSON.stringify(newVal));
   };
 
+  const handleTogglePersistentZikir = async () => {
+    const newVal = !persistentZikirEnabled;
+    if (newVal && permissionStatus !== 'granted') {
+      const granted = await requestNotificationPermission();
+      setPermissionStatus(granted ? 'granted' : 'denied');
+      if (!granted) return;
+    }
+    
+    setPersistentZikirEnabled(newVal);
+    localStorage.setItem("ikra_persistent_zikir", JSON.stringify(newVal));
+    
+    if (newVal) {
+      const totalCount = parseInt(localStorage.getItem("ikra_zikir_total") || "0", 10);
+      managePersistentZikirNotification(true, null, totalCount, "Genel Zikir");
+    } else {
+      managePersistentZikirNotification(false);
+    }
+  };
+
 
   const handleSoundChange = (sound: NotifSound) => {
     setSelectedSound(sound);
@@ -365,6 +389,28 @@ export default function NotificationsPage({ onBack }: { onBack: () => void }) {
               <div className={cn(
                 "h-[27px] w-[27px] rounded-full bg-card shadow transition-transform",
                 pinDailyEnabled ? "translate-x-[22px]" : "translate-x-[2px]"
+              )} />
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between rounded-xl border border-primary/10 bg-card px-4 py-3 shadow-sm">
+            <div className="flex items-center gap-3">
+              <span className="material-symbols-outlined text-primary">touch_app</span>
+              <div>
+                <span className="font-medium">Kilit Ekranı Zikirmatik</span>
+                <p className="text-[10px] text-muted-foreground mr-2">Bildirim çubuğunda "+1 Okudum" butonu ile zikir çekmenizi sağlar.</p>
+              </div>
+            </div>
+            <button
+              onClick={handleTogglePersistentZikir}
+              className={cn(
+                "h-[31px] w-[51px] rounded-full transition-colors flex-shrink-0",
+                persistentZikirEnabled ? "bg-primary" : "bg-muted"
+              )}
+            >
+              <div className={cn(
+                "h-[27px] w-[27px] rounded-full bg-card shadow transition-transform",
+                persistentZikirEnabled ? "translate-x-[22px]" : "translate-x-[2px]"
               )} />
             </button>
           </div>

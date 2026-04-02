@@ -102,6 +102,25 @@ const App = () => {
       setAuthEmail(session?.user?.user_metadata?.full_name || session?.user?.email || null);
     });
 
+    // Background Zikir Action Listener
+    import("@capacitor/local-notifications").then(({ LocalNotifications }) => {
+      LocalNotifications.addListener('localNotificationActionPerformed', (notification) => {
+        if (notification.actionId === 'increment_zikir') {
+          // Increment global total count
+          const totalCount = parseInt(localStorage.getItem("ikra_zikir_total") || "0", 10) + 1;
+          localStorage.setItem("ikra_zikir_total", totalCount.toString());
+          
+          // Re-trigger the persistent notification update immediately
+          const zikirEnabled = localStorage.getItem("ikra_persistent_zikir") === "true";
+          if (zikirEnabled) {
+            import("@/lib/notifications").then(({ managePersistentZikirNotification }) => {
+              managePersistentZikirNotification(true, null, totalCount, "Genel Zikir");
+            });
+          }
+        }
+      });
+    }).catch(() => {});
+
     return () => {
       window.removeEventListener("open-profile", handleOpenProfile);
       subscription.unsubscribe();

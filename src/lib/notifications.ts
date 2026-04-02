@@ -1,7 +1,8 @@
 // Push notification utilities for İKRA app
 import { supabase } from "@/integrations/supabase/client";
+import { Capacitor } from "@capacitor/core";
 
-const isNative = () => !!(window as any).Capacitor?.isNativePlatform?.();
+const isNative = () => Capacitor.isNativePlatform();
 
 // Sound preferences
 export type NotifSound = "default" | "ezan" | "silent";
@@ -441,6 +442,80 @@ export async function scheduleDailyContentNotification(
   return id;
 }
 
+// Lock-Screen Zikirmatik persistent notification
+
+export const PERSISTENT_ZIKIR_ID = 88888;
+
+// Register the action type once
+let zikirActionRegistered = false;
+export async function registerZikirActionType() {
+  if (!isNative() || zikirActionRegistered) return;
+  try {
+    const { LocalNotifications } = await import("@capacitor/local-notifications");
+    await LocalNotifications.registerActionTypes({
+      types: [
+        {
+          id: 'ZIKIR_ACTION_TYPE',
+          actions: [
+            {
+              id: 'increment_zikir',
+              title: '+1 Okudum',
+              foreground: false // Try to execute in background without opening app
+            }
+          ]
+        }
+      ]
+    });
+    zikirActionRegistered = true;
+  } catch (e) {
+    console.error("Zikir action type error:", e);
+  }
+}
+
+export async function managePersistentZikirNotification(
+  enabled: boolean,
+  currentTarget: number | null = null,
+  currentCount: number = 0,
+  zikirName: string = "Genel Zikir"
+) {
+  if (!isNative()) return;
+
+  try {
+    const { LocalNotifications } = await import("@capacitor/local-notifications");
+
+    if (!enabled) {
+      await LocalNotifications.cancel({ notifications: [{ id: PERSISTENT_ZIKIR_ID }] });
+      return;
+    }
+
+    await registerZikirActionType();
+
+    const progressText = currentTarget && currentTarget > 0 
+      ? `${currentCount} / ${currentTarget}` 
+      : `${currentCount} defa okundu`;
+
+    await LocalNotifications.schedule({
+      notifications: [
+        {
+          title: `📿 Zikirmatik: ${zikirName}`,
+          body: progressText,
+          id: PERSISTENT_ZIKIR_ID,
+          schedule: { at: new Date(Date.now() + 500) }, // Schedule almost immediately
+          smallIcon: "ic_stat_icon_config_sample",
+          iconColor: "#1a8a4a",
+          ongoing: true, // Keep it pinned
+          autoCancel: false,
+          sound: undefined, // Silent update
+          actionTypeId: 'ZIKIR_ACTION_TYPE', // Attach the +1 button
+        },
+      ],
+    });
+
+  } catch (e) {
+    console.error("Persistent zikir notification error:", e);
+  }
+}
+
 // Register background sync
 export async function registerBackgroundSync(tag: string) {
   if ('serviceWorker' in navigator && 'SyncManager' in window) {
@@ -452,3 +527,4 @@ export async function registerBackgroundSync(tag: string) {
     }
   }
 }
+
